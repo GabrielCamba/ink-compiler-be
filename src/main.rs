@@ -9,6 +9,8 @@ extern crate rocket;
 use api::contract_api::{create_contract, get_contract};
 use repository::mongodb_repo::MongoRepo;
 
+// TODO Implement logger
+
 #[launch]
 fn rocket() -> _ {
     let db = MongoRepo::init();

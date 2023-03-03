@@ -12,6 +12,7 @@ pub struct Contract {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WizardMessage {
+    pub address: String,
     pub code: String,
     pub features: Vec<String>,
 }

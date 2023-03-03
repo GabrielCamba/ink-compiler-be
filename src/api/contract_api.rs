@@ -1,7 +1,7 @@
 use crate::{
     models::contract_model::{Contract, WizardMessage},
     repository::mongodb_repo::MongoRepo,
-    utils::contract_utils::{create_cargo_toml_file, create_lib_rs_file},
+    utils::contract_utils::{create_files, delete_files},
 };
 use mongodb::{bson::oid::ObjectId, results::InsertOneResult};
 use rocket::{http::Status, serde::json::Json, State};
@@ -11,12 +11,28 @@ pub fn create_contract(
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<InsertOneResult>, Status> {
+    // TODO Sanity check WizardMessage data
+
     // TODO Check if contract already exists in DB
 
     // TODO If contract already exists, return data
 
     // TODO If contract does not exist, compile contract and return data
-    create_cargo_toml_file(&wizard_message.features); //TODO Add error handling
+    let dir_path = create_files(&wizard_message); //TODO Handle error
+    println!("dir_path: {:?}", dir_path);
+    if dir_path.is_err() {
+        return Err(Status::InternalServerError);
+    }
+
+    let dir_path = dir_path.expect("This won't fail because we already checked for error");
+
+    delete_files(&dir_path); //TODO Handle error
+
+    //TODO Compile contract
+
+    //TODO Save contract in DB
+
+    //TODO Delete tmp folder
 
     //let contract_detail = db.create_contract(data);
     // match contract_detail {
