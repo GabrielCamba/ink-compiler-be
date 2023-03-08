@@ -1,4 +1,4 @@
-use crate::models::contract_model::{Contract, WizardMessage};
+use crate::models::contract_model::{WizardMessage};
 use crate::utils::constants::{ALLOWED_FEATURES, CARGO_TOML}; // Maybe we can use directly from module
 use std::env;
 use std::fs::{create_dir, File};

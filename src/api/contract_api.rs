@@ -3,12 +3,12 @@ use crate::{
     repository::mongodb_repo::MongoRepo,
     utils::contract_utils::{create_files, delete_files},
 };
-use mongodb::{bson::oid::ObjectId, results::InsertOneResult};
+use mongodb::{results::InsertOneResult};
 use rocket::{http::Status, serde::json::Json, State};
 
 #[post("/contract", data = "<wizard_message>")]
 pub fn create_contract(
-    db: &State<MongoRepo>,
+    _db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<InsertOneResult>, Status> {
     // TODO Sanity check WizardMessage data
