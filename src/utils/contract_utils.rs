@@ -4,6 +4,26 @@ use std::env;
 use std::fs::{create_dir, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::process::Command;
+
+pub fn compile_contract(
+    cargo_path: &String,
+    dir_path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut binding = Command::new(cargo_path);
+    let compiler_cmd = binding
+        .arg("contract")
+        .arg("build")
+        .arg("--release")
+        .arg("--quiet")
+        .current_dir(dir_path);
+
+    let status = compiler_cmd.status()?;
+    if !status.success() {
+        return Err("Compilation failed".into());
+    }
+    Ok(())
+}
 
 pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let tmp_path_string = format!("/tmp/{}", wizard_message.address);

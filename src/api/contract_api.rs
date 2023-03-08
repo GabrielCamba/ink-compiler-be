@@ -1,14 +1,16 @@
 use crate::{
     models::contract_model::{Contract, WizardMessage},
     repository::mongodb_repo::MongoRepo,
-    utils::contract_utils::{create_files, delete_files},
+    utils::compiler::Compiler,
+    utils::contract_utils::{compile_contract, create_files, delete_files},
 };
 use mongodb::{results::InsertOneResult};
 use rocket::{http::Status, serde::json::Json, State};
 
 #[post("/contract", data = "<wizard_message>")]
 pub fn create_contract(
-    _db: &State<MongoRepo>,
+    compiler: &State<Compiler>,
+    db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<InsertOneResult>, Status> {
     // TODO Sanity check WizardMessage data
@@ -18,28 +20,27 @@ pub fn create_contract(
 
     // TODO If contract already exists, return data
 
-    // TODO If contract does not exist, compile contract save in the database and return data
-    let dir_path = create_files(&wizard_message); //TODO Handle error
-    println!("dir_path: {:?}", dir_path);
+    // TODO If contract does not exist, compile contract and return data
+    let dir_path = create_files(&wizard_message);
+
+    //println!("dir_path: {:?}", dir_path);
     if dir_path.is_err() {
         return Err(Status::InternalServerError);
     }
 
     let dir_path = dir_path.expect("This won't fail because we already checked for error");
-
-    delete_files(&dir_path); //TODO Handle error
+    print!("dir_path: {:?}", dir_path);
+    compile_contract(&compiler.cargo_loc, &dir_path); //TODO Handle error
 
     //LUCA TODO Compile contract
 
     //TODO Save contract in DB
 
-    //LUCA TODO Delete tmp folder
+    //TODO Return contract data
 
-    //let contract_detail = db.create_contract(data);
-    // match contract_detail {
-    //     Ok(contract) => Ok(Json(contract)),
-    //     Err(_) => Err(Status::InternalServerError),
-    // }
+    //TODO Delete tmp folder
+    delete_files(&dir_path); //TODO Handle error
+
     Err(Status::InternalServerError)
 }
 
