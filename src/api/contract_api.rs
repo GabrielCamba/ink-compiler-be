@@ -12,12 +12,13 @@ pub fn create_contract(
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<InsertOneResult>, Status> {
     // TODO Sanity check WizardMessage data
+    // tamaño del código, chequear la address, y freatures not empty (include psp22, psp34 or psp 37)
 
     // TODO Check if contract already exists in DB
 
     // TODO If contract already exists, return data
 
-    // TODO If contract does not exist, compile contract and return data
+    // TODO If contract does not exist, compile contract save in the database and return data
     let dir_path = create_files(&wizard_message); //TODO Handle error
     println!("dir_path: {:?}", dir_path);
     if dir_path.is_err() {
@@ -28,11 +29,11 @@ pub fn create_contract(
 
     delete_files(&dir_path); //TODO Handle error
 
-    //TODO Compile contract
+    //LUCA TODO Compile contract
 
     //TODO Save contract in DB
 
-    //TODO Delete tmp folder
+    //LUCA TODO Delete tmp folder
 
     //let contract_detail = db.create_contract(data);
     // match contract_detail {
