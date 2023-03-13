@@ -405,6 +405,7 @@ dependencies = [
  "mongodb",
  "rocket",
  "serde",
+ "sha2",
 ]
 
 [[package]]

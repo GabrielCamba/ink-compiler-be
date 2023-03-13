@@ -22,7 +22,30 @@ pub fn compile_contract(
     if !status.success() {
         return Err("Compilation failed".into());
     }
+
     Ok(())
+}
+
+pub fn get_contract_data(
+    dir_path: &Path,
+    code_hash: &String,
+) -> Result<Contract, Box<dyn std::error::Error>> {
+    let mut wasm_file = File::open(dir_path.join("target/ink/compiled_contract.wasm"))?;
+    let mut wasm = Vec::new();
+    wasm_file.read_to_end(&mut wasm)?;
+
+    let mut metadata_file = File::open(dir_path.join("target/ink/compiled_contract.json"))?;
+    let mut metadata = String::new();
+    metadata_file.read_to_string(&mut metadata)?;
+
+    let contract = Contract {
+        id: None,
+        code_hash: code_hash.to_owned(),
+        metadata,
+        wasm,
+    };
+
+    Ok(contract)
 }
 
 pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn std::error::Error>> {

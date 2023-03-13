@@ -8,7 +8,7 @@ pub const ALLOWED_FEATURES: [&str; 6] = [
 ];
 
 pub const CARGO_TOML: &str = "[package]\n\
-name = \"my_psp22\"\n\
+name = \"compiled_contract\"\n\
 version = \"1.0.0\"\n\
 edition = \"2021\"\n\
 authors = [\"The best developer ever\"]\n\
@@ -21,7 +21,7 @@ scale-info = { version = \"2.3\", default-features = false, features = [\"derive
 openbrush = { tag = \"3.0.0\", git = \"https://github.com/727-Ventures/openbrush-contracts\", default-features = false, features = [features_list] }\n\
 \n\
 [lib]\n\
-name = \"my_psp22\"\n\
+name = \"compiled_contract\"\n\
 path = \"lib.rs\"\n\
 crate-type = [\n\
     # Used for normal contract Wasm blobs.\n\
