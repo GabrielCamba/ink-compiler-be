@@ -38,6 +38,7 @@ pub fn create_contract(
         },
         Err(_) => {
             println!("something bad happened");
+            return Err(Status::InternalServerError);
         }
     }
 
@@ -56,19 +57,29 @@ pub fn create_contract(
 
     //TODO Get contract data
     let contract = get_contract_data(&dir_path, &code_hash_str);
-    if contract.is_err() {
-        return Err(Status::InternalServerError);
-    }
 
-    //TODO Save contract in DB
-
-    //TODO Delete tmp folder
-    delete_files(&dir_path); //TODO Handle error
-
-    //TODO Return contract data
-    Ok(Json(contract.expect(
-        "This won't fail because we already checked for error",
-    )))
+    match contract {
+        Ok(contract_unwrapped) => {
+            let contract_save_result = db.create_contract(contract_unwrapped.clone());
+            match contract_save_result {
+                Ok(insert_one_result) => {
+                    println!("insert_one_result: {:?}", &insert_one_result);
+                    //TODO Delete tmp folder
+                    delete_files(&dir_path); //TODO Handle error
+                    //TODO Return contract data
+                    return Ok(Json(contract_unwrapped))
+                },
+                Err(_) => {
+                    println!("something bad happened");
+                    return Err(Status::InternalServerError);
+                }
+            }
+        },
+        Err(_) => {
+            println!("something bad happened");
+            return Err(Status::InternalServerError);
+        }
+    };
 }
 
 #[get("/contract/<path>")]
