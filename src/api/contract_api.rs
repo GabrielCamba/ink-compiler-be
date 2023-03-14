@@ -22,13 +22,28 @@ pub fn create_contract(
     hasher.update(&wizard_message.code);
     let code_hash = hasher.finalize();
     let code_hash_str = format!("{:x}", code_hash);
+    println!("code_hash_str: {:?}", &code_hash_str);
 
-    // TODO If contract already exists, return data
+    let contract_on_db = db.get_contract_by_hash(&code_hash_str);
 
-    // TODO If contract does not exist, compile contract and return data
+    match contract_on_db {
+        Ok(contract) => {
+            match contract {
+                Some(contract) => {
+                    println!("contract: {:?}", &contract);
+                    return Ok(Json(contract))
+                },
+                None => ()
+            }
+        },
+        Err(_) => {
+            println!("something bad happened");
+        }
+    }
+
+
     let dir_path = create_files(&wizard_message);
 
-    //println!("dir_path: {:?}", dir_path);
     if dir_path.is_err() {
         return Err(Status::InternalServerError);
     }

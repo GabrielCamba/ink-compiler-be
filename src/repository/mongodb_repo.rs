@@ -48,4 +48,15 @@ impl MongoRepo {
             .expect("Error getting contract's detail");
         Ok(contract_detail.unwrap())
     }
+
+    pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
+        let filter = doc! {"code_hash": hash};
+        let contract = self
+            .col
+            .find_one(filter, None)
+            .ok()
+            .expect("There was an error fetching the contract");
+        Ok(contract)
+    }
+
 }
