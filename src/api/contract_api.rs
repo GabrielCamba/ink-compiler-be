@@ -64,16 +64,13 @@ pub fn create_contract(
             match contract_save_result {
                 Ok(insert_one_result) => {
                     println!("insert_one_result: {:?}", &insert_one_result);
-                    //TODO Delete tmp folder
-                    delete_files(&dir_path); //TODO Handle error
-                    //TODO Return contract data
-                    return Ok(Json(contract_unwrapped))
                 },
                 Err(_) => {
                     println!("something bad happened");
-                    return Err(Status::InternalServerError);
                 }
-            }
+            };
+            delete_files(&dir_path); //TODO Handle error
+            return Ok(Json(contract_unwrapped))
         },
         Err(_) => {
             println!("something bad happened");

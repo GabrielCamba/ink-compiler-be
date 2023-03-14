@@ -24,15 +24,9 @@ impl MongoRepo {
     }
 
     pub fn create_contract(&self, new_contract: Contract) -> Result<InsertOneResult, Error> {
-        let new_doc = Contract {
-            id: None,
-            code_hash: new_contract.code_hash,
-            metadata: new_contract.metadata,
-            wasm: new_contract.wasm,
-        };
         let contract = self
             .col
-            .insert_one(new_doc, None)
+            .insert_one(new_contract, None)
             .ok()
             .expect("Error creating contract");
         Ok(contract)
