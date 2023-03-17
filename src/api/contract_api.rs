@@ -27,14 +27,13 @@ pub fn create_contract(
     match contract_on_db {
         Ok(contract) => match contract {
             Some(contract) => {
-                println!("contract: {:?}", &contract);
+                //println!("contract: {:?}", &contract);
                 return Ok(Json(ServerResponse::new_valid(contract)));
             }
             None => (),
         },
         Err(_) => {
             println!("something bad happened");
-            return Err(Status::InternalServerError);
         }
     }
 

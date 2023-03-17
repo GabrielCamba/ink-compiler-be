@@ -2,7 +2,7 @@ use std::env;
 
 use crate::models::contract_model::Contract;
 use mongodb::{
-    bson::{doc, extjson::de::Error, oid::ObjectId},
+    bson::{doc, extjson::de::Error},
     results::InsertOneResult,
     sync::{Client, Collection},
 };
@@ -24,29 +24,12 @@ impl MongoRepo {
     }
 
     pub fn create_contract(&self, new_contract: Contract) -> Result<InsertOneResult, Error> {
-        let new_doc = Contract {
-            id: None,
-            code_id: new_contract.code_id,
-            metadata: new_contract.metadata,
-            wasm: new_contract.wasm,
-        };
         let contract = self
             .col
             .insert_one(new_contract, None)
             .ok()
             .expect("Error creating contract");
         Ok(contract)
-    }
-
-    pub fn get_contract(&self, id: &String) -> Result<Contract, Error> {
-        let obj_id = ObjectId::parse_str(id).unwrap();
-        let filter = doc! {"_id": obj_id};
-        let contract_detail = self
-            .col
-            .find_one(filter, None)
-            .ok()
-            .expect("Error getting contract's detail");
-        Ok(contract_detail.unwrap())
     }
 
     pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
