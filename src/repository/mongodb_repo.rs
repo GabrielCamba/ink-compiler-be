@@ -24,6 +24,12 @@ impl MongoRepo {
     }
 
     pub fn create_contract(&self, new_contract: Contract) -> Result<InsertOneResult, Error> {
+        let new_doc = Contract {
+            id: None,
+            code_id: new_contract.code_id,
+            metadata: new_contract.metadata,
+            wasm: new_contract.wasm,
+        };
         let contract = self
             .col
             .insert_one(new_contract, None)
@@ -44,7 +50,7 @@ impl MongoRepo {
     }
 
     pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
-        let filter = doc! {"code_hash": hash};
+        let filter = doc! {"code_id": hash};
         let contract = self
             .col
             .find_one(filter, None)
@@ -52,5 +58,4 @@ impl MongoRepo {
             .expect("There was an error fetching the contract");
         Ok(contract)
     }
-
 }
