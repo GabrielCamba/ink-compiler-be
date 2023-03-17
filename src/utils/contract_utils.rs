@@ -64,6 +64,7 @@ pub fn delete_files(dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     // Delete tmp folder
     std::fs::remove_dir_all(dir_path)?;
     Ok(())
+    //TODO Return void and if error, log it from here
 }
 
 fn create_cargo_toml_file(
