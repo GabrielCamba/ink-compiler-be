@@ -1,6 +1,5 @@
 use std::env;
-use std::path::Path;
-use std::process::Command;
+use log::debug;
 
 pub struct Compiler {
     pub cargo_loc: String,
@@ -8,9 +7,13 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn init() -> Self {
+        debug!("Initializing compiler");
         let cargo_loc = match env::var("CARGO") {
             Ok(v) => v.to_string(),
-            Err(_) => format!("Error loading env variable"),
+            Err(_) => {
+                debug!("Could not find CARGO env variable");
+                format!("Error loading env variable")
+            },
         }; //TODO Handle error better
 
         Compiler { cargo_loc }
