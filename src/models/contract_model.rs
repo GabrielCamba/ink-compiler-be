@@ -1,5 +1,4 @@
 use mongodb::bson::oid::ObjectId;
-use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
