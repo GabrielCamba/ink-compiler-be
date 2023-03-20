@@ -1,5 +1,6 @@
 use crate::models::contract_model::{Contract, WizardMessage};
 use crate::utils::constants::{ALLOWED_FEATURES, CARGO_TOML}; // Maybe we can use directly from module
+use sha2::{Digest, Sha256};
 use std::env;
 use std::fs::{create_dir, File};
 use std::io::prelude::*;
@@ -28,7 +29,7 @@ pub fn compile_contract(
 
 pub fn get_contract_data(
     dir_path: &Path,
-    code_hash: &String,
+    code_id: &String,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
     let mut wasm_file = File::open(dir_path.join("target/ink/compiled_contract.wasm"))?;
     let mut wasm = Vec::new();
@@ -40,7 +41,7 @@ pub fn get_contract_data(
 
     let contract = Contract {
         id: None,
-        code_hash: code_hash.to_owned(),
+        code_id: code_id.to_owned(),
         metadata,
         wasm,
     };
@@ -57,6 +58,7 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
 
     create_cargo_toml_file(&wizard_message.features, &tmp_dir_path)?;
     create_lib_rs_file(&wizard_message.code, &tmp_dir_path)?;
+    // TODO: dont return at first error, delete files and return error or return the path to be able to delete files after
     Ok(tmp_dir_path)
 }
 
@@ -105,4 +107,11 @@ fn check_features(features: &Vec<String>) -> Result<String, Box<dyn std::error::
         .join(", ");
 
     Ok(features_list)
+}
+
+pub fn hash_code(code: &String) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(code);
+    let code_id = hasher.finalize();
+    format!("{:x}", code_id)
 }
