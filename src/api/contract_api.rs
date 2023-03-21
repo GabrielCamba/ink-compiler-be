@@ -5,6 +5,7 @@ use crate::{
     utils::contract_utils::{
         compile_contract, create_files, delete_files, get_contract_data, hash_code,
     },
+    utils::sanity_check::sanity_check,
 };
 
 use log::{debug, error, info, warn};
@@ -17,8 +18,8 @@ pub fn create_contract(
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<ServerResponse>, Custom<Json<ServerResponse>>> {
-    // TODO Sanity check WizardMessage data
-    // tamaño del código, chequear la address, y freatures not empty (include psp22, psp34 or psp 37)
+    // TODO Sanity check WizardMessage data codesize , check address, y freatures not empty ( must include psp22, psp34 or psp37)
+    sanity_check(&wizard_message);
 
     let code_hash_str = hash_code(&wizard_message.code);
     debug!("hash_code completed");
