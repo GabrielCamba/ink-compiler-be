@@ -29,8 +29,9 @@ pub fn create_contract(
 
     match contract_on_db {
         Ok(contract) => match contract {
-            Some(contract) => {
-                info!("Contract existing in the db: {:?}", &contract);
+            Some(mut contract) => {
+                info!("Contract existing in the db with id: {:?}", &contract.id);
+                contract.id = None;
                 return Ok(Json(ServerResponse::new_valid(contract)));
             }
             None => (),
@@ -59,7 +60,10 @@ pub fn create_contract(
 
     // Compile contract
     let res = compile_contract(&compiler.cargo_loc, &dir_path);
-    info!("compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}", &compiler.cargo_loc, &dir_path);
+    info!(
+        "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
+        &compiler.cargo_loc, &dir_path
+    );
 
     if res.is_err() {
         let res = delete_files(&dir_path);
@@ -77,12 +81,18 @@ pub fn create_contract(
 
     // Get contract data
     let contract = get_contract_data(&dir_path, &code_hash_str);
-    debug!("get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}", &dir_path, &code_hash_str);
+    debug!(
+        "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
+        &dir_path, &code_hash_str
+    );
 
     match contract {
         Ok(contract_unwrapped) => {
             let contract_save_result = db.create_contract(contract_unwrapped.clone());
-            info!("create_contract called with contract: {:?}", &contract_unwrapped);
+            info!(
+                "create_contract called with contract: {:?}",
+                &contract_unwrapped
+            );
             match contract_save_result {
                 Ok(insert_one_result) => {
                     info!("insert_one_result: {:?}", &insert_one_result);
