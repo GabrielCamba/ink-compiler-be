@@ -1,18 +1,21 @@
 use crate::models::contract_model::{Contract, WizardMessage};
 use crate::utils::constants::{ALLOWED_FEATURES, CARGO_TOML}; // Maybe we can use directly from module
+use log::{debug, error, info};
 use sha2::{Digest, Sha256};
 use std::env;
 use std::fs::{create_dir, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use log::{debug, error, info};
 
 pub fn compile_contract(
     cargo_path: &String,
     dir_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("Entered utils compile_contract with params {:?} and: {:?}", cargo_path, dir_path);
+    debug!(
+        "Entered utils compile_contract with params {:?} and: {:?}",
+        cargo_path, dir_path
+    );
     let mut binding = Command::new(cargo_path);
     let compiler_cmd = binding
         .arg("contract")
@@ -35,7 +38,10 @@ pub fn get_contract_data(
     dir_path: &Path,
     code_id: &String,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
-    debug!("Entered utils get_contract_data with params {:?} and: {:?}", dir_path, code_id);
+    debug!(
+        "Entered utils get_contract_data with params {:?} and: {:?}",
+        dir_path, code_id
+    );
     let mut wasm_file = File::open(dir_path.join("target/ink/compiled_contract.wasm"))?;
     let mut wasm = Vec::new();
     wasm_file.read_to_end(&mut wasm)?;
@@ -56,7 +62,10 @@ pub fn get_contract_data(
 }
 
 pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    debug!("Entered create_files with wizard_message: {:?}", &wizard_message);
+    debug!(
+        "Entered create_files with wizard_message: {:?}",
+        &wizard_message
+    );
     let tmp_path_string = format!("/tmp/{}", wizard_message.address);
 
     let current_dir = env::current_dir().unwrap();
@@ -84,7 +93,10 @@ fn create_cargo_toml_file(
     features: &Vec<String>,
     dir_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("Entered create_cargo_toml_file with features: {:?} and dir_path: {:?}", features, dir_path);
+    debug!(
+        "Entered create_cargo_toml_file with features: {:?} and dir_path: {:?}",
+        features, dir_path
+    );
     // Check if sent features are allowed
     let features_list = check_features(features)?;
 
@@ -100,7 +112,10 @@ fn create_cargo_toml_file(
 }
 
 fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("Entered create_lib_rs_file with code: {:?} and dir_path: {:?}", code, dir_path);
+    debug!(
+        "Entered create_lib_rs_file with code: {:?} and dir_path: {:?}",
+        code, dir_path
+    );
     let path = dir_path.join("lib.rs");
     let mut lib_rs_file = File::create(path)?;
     lib_rs_file.write_all(code.as_bytes())?;

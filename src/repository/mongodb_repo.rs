@@ -20,7 +20,7 @@ impl MongoRepo {
             Err(_) => {
                 error!("MONGOURI environment variable not set");
                 format!("Error loading env variable")
-            },
+            }
         };
         let client = Client::with_uri_str(uri).unwrap();
         debug!("Connected to MongoDB");

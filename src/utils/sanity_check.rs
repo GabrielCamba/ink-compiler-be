@@ -1,9 +1,11 @@
+use crate::models::contract_model::{ServerResponse, WizardMessage};
 use crate::utils::constants::CONTRACTS;
 use log::error;
-use rocket::{http::Status, serde::json::Json, response::status::Custom};
-use crate::models::contract_model::{ServerResponse, WizardMessage};
+use rocket::{http::Status, response::status::Custom, serde::json::Json};
 
-pub fn sanity_check(wizard_message: &Json<WizardMessage>) -> Result<(), Custom<Json<ServerResponse>>> {
+pub fn sanity_check(
+    wizard_message: &Json<WizardMessage>,
+) -> Result<(), Custom<Json<ServerResponse>>> {
     // Sanity check WizardMessage data codesize , check address, y freatures not empty ( must include psp22, psp34 or psp37)
     if wizard_message.code.len() > 49999 {
         error!("Code size is too big");
@@ -45,7 +47,7 @@ pub fn sanity_check(wizard_message: &Json<WizardMessage>) -> Result<(), Custom<J
                     Status::InternalServerError,
                     Json(ServerResponse::new_error(String::from(
                         "Features must contain at least one contract standard",
-                    )))
+                    ))),
                 ));
             }
         }
@@ -56,7 +58,7 @@ pub fn sanity_check(wizard_message: &Json<WizardMessage>) -> Result<(), Custom<J
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
                 "Features must contain at least one contract standard",
-            )))
+            ))),
         ));
     }
     Ok(())
