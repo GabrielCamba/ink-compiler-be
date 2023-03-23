@@ -9,6 +9,8 @@ pub const ALLOWED_FEATURES: [&str; 6] = [
     "access-control",
 ];
 
+pub const MAX_SIZE_ALLOWED: usize = 49999;
+
 pub const CARGO_TOML: &str = "[package]\n\
 name = \"compiled_contract\"\n\
 version = \"1.0.0\"\n\

@@ -1,5 +1,5 @@
 use crate::models::contract_model::{Contract, WizardMessage};
-use crate::utils::constants::{ALLOWED_FEATURES, CARGO_TOML}; // Maybe we can use directly from module
+use crate::utils::constants::CARGO_TOML; // Maybe we can use directly from module
 use log::{debug, error, info};
 use sha2::{Digest, Sha256};
 use std::env;
@@ -98,7 +98,7 @@ fn create_cargo_toml_file(
         features, dir_path
     );
     // Check if sent features are allowed
-    let features_list = check_features(features)?;
+    let features_list = parse_features(features)?;
 
     // Replace features_list in CARGO_TOML with features received
     let cargo_toml_file_contents = CARGO_TOML.replace("features_list", &features_list);
@@ -124,22 +124,15 @@ fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std:
     Ok(())
 }
 
-fn check_features(features: &Vec<String>) -> Result<String, Box<dyn std::error::Error>> {
-    debug!("Entered check_features with features: {:?}", features);
-    for feature in features {
-        if !ALLOWED_FEATURES.contains(&feature.as_str()) {
-            error!("Feature not allowed: {:?}", feature);
-            return Err("Feature not allowed".into());
-        }
-    }
-
+fn parse_features(features: &Vec<String>) -> Result<String, Box<dyn std::error::Error>> {
+    debug!("Entered parse_features with features: {:?}", features);
     let features_list = features
         .iter()
         .map(|s| format!("\"{}\"", s))
         .collect::<Vec<String>>()
         .join(", ");
 
-    info!("check_features success");
+    info!("parse_features success");
     Ok(features_list)
 }
 
