@@ -18,13 +18,7 @@ pub fn create_contract(
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<ServerResponse>, Custom<Json<ServerResponse>>> {
-    // TODO Sanity check WizardMessage data codesize , check address, y freatures not empty ( must include psp22, psp34 or psp37)
-    let check = sanity_check(&wizard_message);
-
-    if check.is_err() {
-        let e = check.unwrap_err();
-        return Err(e);
-    }
+    sanity_check(&wizard_message)?;
 
     let code_hash_str = hash_code(&wizard_message.code);
     debug!("hash_code completed");
