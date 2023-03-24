@@ -224,4 +224,20 @@ mod sanity_check_tests {
         let error = &result.err().unwrap();
         assert_eq!(error.0, Status::InternalServerError);
     }
+
+    #[test]
+    fn test_sanity_check_on_success() {
+        // Test case when the code size is greater than the maximum allowed size
+        let wizard_message = WizardMessage {
+            code: String::from_utf8(vec![b'1'; MAX_SIZE_ALLOWED - 1]).unwrap(),
+            address: String::from(BOB),
+            features: vec![String::from("psp22"), String::from("pausable")],
+        };
+
+        let expected_result = Ok(());
+
+        let result = sanity_check(&Json(wizard_message));
+        assert_eq!(result, expected_result);
+        assert_eq!(result.is_err(), false);
+    }
 }
