@@ -18,7 +18,7 @@ pub fn sanity_check(
     }
 
     // Checks the address len is valid
-    if wizard_message.address.len() != 41 {
+    if wizard_message.address.len() != 48 {
         error!("Address is not valid");
         return Err(Custom(
             Status::InternalServerError,
@@ -63,7 +63,7 @@ pub fn sanity_check(
                 return Err(Custom(
                     Status::InternalServerError,
                     Json(ServerResponse::new_error(String::from(
-                        "Features must contain at least one contract standard",
+                        "Feature contains ambiguous contract standard",
                     ))),
                 ));
             }
