@@ -144,3 +144,7 @@ pub fn hash_code(code: &String) -> String {
     info!("hash_code success: {:?}", code_id);
     format!("{:x}", code_id)
 }
+
+#[cfg(test)]
+#[path = "../tests/utils/contract_utils_tests.rs"]
+mod contract_utils_tests;
