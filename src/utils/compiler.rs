@@ -1,5 +1,5 @@
-use std::env;
 use log::debug;
+use std::env;
 
 pub struct Compiler {
     pub cargo_loc: String,
@@ -13,7 +13,7 @@ impl Compiler {
             Err(_) => {
                 debug!("Could not find CARGO env variable");
                 format!("Error loading env variable")
-            },
+            }
         }; //TODO Handle error better
 
         Compiler { cargo_loc }

@@ -1,3 +1,5 @@
+pub const CONTRACTS: [&str; 3] = ["psp22", "psp34", "psp37"];
+
 pub const ALLOWED_FEATURES: [&str; 6] = [
     "psp22",
     "psp34",
@@ -6,6 +8,8 @@ pub const ALLOWED_FEATURES: [&str; 6] = [
     "ownable",
     "access-control",
 ];
+
+pub const MAX_SIZE_ALLOWED: usize = 49999;
 
 pub const CARGO_TOML: &str = "[package]\n\
 name = \"compiled_contract\"\n\
