@@ -58,7 +58,7 @@ mod contract_utils_tests {
                 .read_to_string(&mut toml)
                 .expect("Could not read file");
 
-            let features_list = check_features(&features).expect("Could not check features");
+            let features_list = parse_features(&features).expect("Could not check features");
 
             // Check file content
             assert_eq!(toml, CARGO_TOML.replace("features_list", &features_list));
