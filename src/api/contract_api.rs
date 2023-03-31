@@ -1,5 +1,8 @@
 use crate::{
-    models::contract_model::{ServerResponse, WizardMessage},
+    models::{
+        api_models::{ServerResponse, WizardMessage},
+        db_models::Contract,
+    },
     repository::mongodb_repo::MongoRepo,
     utils::compiler::Compiler,
     utils::contract_utils::{
@@ -17,7 +20,7 @@ pub fn create_contract(
     compiler: &State<Compiler>,
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
-) -> Result<Json<ServerResponse>, Custom<Json<ServerResponse>>> {
+) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
     sanity_check(&wizard_message)?;
 
     let code_hash_str = hash_code(&wizard_message.code);

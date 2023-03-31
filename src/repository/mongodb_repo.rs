@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::models::contract_model::Contract;
+use crate::models::db_models::Contract;
 use mongodb::{
     bson::{doc, extjson::de::Error},
     results::InsertOneResult,

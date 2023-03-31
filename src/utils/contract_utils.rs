@@ -1,4 +1,5 @@
-use crate::models::contract_model::{Contract, WizardMessage};
+use crate::models::api_models::WizardMessage;
+use crate::models::db_models::Contract;
 use crate::utils::constants::CARGO_TOML; // Maybe we can use directly from module
 use log::{debug, error, info};
 use sha2::{Digest, Sha256};

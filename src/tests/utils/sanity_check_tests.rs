@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod sanity_check_tests {
 
+    use crate::models::db_models::Contract;
+
     use super::super::*;
 
     const BOB: &str = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty";
@@ -16,7 +18,7 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
+            Json(ServerResponse::<Contract>::new_error(String::from(
                 "Code size too big.",
             ))),
         ));
@@ -38,7 +40,9 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from("Invalid address."))),
+            Json(ServerResponse::<Contract>::new_error(String::from(
+                "Invalid address.",
+            ))),
         ));
 
         let result = sanity_check(&Json(wizard_message));
@@ -58,7 +62,7 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
+            Json(ServerResponse::<Contract>::new_error(String::from(
                 "Features must not be empty.",
             ))),
         ));
@@ -84,7 +88,7 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
+            Json(ServerResponse::<Contract>::new_error(String::from(
                 "Feature not allowed",
             ))),
         ));
@@ -109,7 +113,7 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
+            Json(ServerResponse::<Contract>::new_error(String::from(
                 "Feature contains ambiguous contract standard",
             ))),
         ));
@@ -130,7 +134,7 @@ mod sanity_check_tests {
 
         let expected_error = Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
+            Json(ServerResponse::<Contract>::new_error(String::from(
                 "Features must contain at least one contract standard",
             ))),
         ));

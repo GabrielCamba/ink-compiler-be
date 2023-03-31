@@ -1,11 +1,12 @@
-use crate::models::contract_model::{ServerResponse, WizardMessage};
+use crate::models::api_models::{ServerResponse, WizardMessage};
+use crate::models::db_models::Contract;
 use crate::utils::constants::{ALLOWED_FEATURES, CONTRACTS, MAX_SIZE_ALLOWED};
 use log::error;
 use rocket::{http::Status, response::status::Custom, serde::json::Json};
 
 pub fn sanity_check(
     wizard_message: &Json<WizardMessage>,
-) -> Result<(), Custom<Json<ServerResponse>>> {
+) -> Result<(), Custom<Json<ServerResponse<Contract>>>> {
     // Checks length of the code not passing the max allowed
     if wizard_message.code.len() > MAX_SIZE_ALLOWED {
         error!("Code size is too big");

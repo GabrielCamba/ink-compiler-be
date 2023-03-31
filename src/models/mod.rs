@@ -1,1 +1,2 @@
-pub mod contract_model;
+pub mod api_models;
+pub mod db_models;
