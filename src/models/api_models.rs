@@ -41,3 +41,9 @@ pub struct DeployMessage {
     pub network: String,
     pub code_id: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetDeploymentsMessage {
+    pub address: String,
+    pub network: Option<String>,
+}

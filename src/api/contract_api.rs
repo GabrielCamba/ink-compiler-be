@@ -1,7 +1,7 @@
 use crate::{
     models::{
-        api_models::{ServerResponse, WizardMessage},
-        db_models::Contract,
+        api_models::{DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage},
+        db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
     utils::compiler::Compiler,
@@ -91,7 +91,7 @@ pub fn create_contract(
 
     match contract {
         Ok(contract_unwrapped) => {
-            let contract_save_result = db.create_contract(contract_unwrapped.clone());
+            let contract_save_result = db.create_contract(&contract_unwrapped);
             info!(
                 "create_contract called with contract: {:?}",
                 &contract_unwrapped
@@ -125,4 +125,55 @@ pub fn create_contract(
             ));
         }
     };
+}
+
+#[post("/deploy", data = "<deploy_message>")]
+pub fn new_deployment(
+    db: &State<MongoRepo>,
+    deploy_message: Json<DeployMessage>,
+) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
+    // TODO Check input
+
+    let deployment = Deployment::new(&deploy_message);
+    let deployment_save_result = db.create_deployment(&deployment);
+
+    info!("create_deployment called with: {:?}", &deployment);
+    match deployment_save_result {
+        Ok(insert_one_result) => {
+            info!("insert_one_result: {:?}", &insert_one_result);
+            Ok(Json(ServerResponse::new_valid(String::from("ok"))))
+        }
+
+        Err(_) => {
+            error!("something bad happened");
+            Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(String::from(
+                    "Error creating deployment.",
+                ))),
+            ))
+        }
+    }
+}
+
+#[get("/deployments", data = "<get_deployments>")]
+pub fn get_contract_deployments(
+    db: &State<MongoRepo>,
+    get_deployments: Json<GetDeploymentsMessage>,
+) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
+    // Get all deployments which have the address
+    // Return them
+
+    // TODO Check input
+    let deployments = db.get_deployments(&get_deployments);
+
+    match deployments {
+        Ok(deployments_unwrapped) => Ok(Json(ServerResponse::new_valid(deployments_unwrapped))),
+        Err(_) => Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Error getting deployments.",
+            ))),
+        )),
+    }
 }
