@@ -1,5 +1,10 @@
 use crate::{
-    models::contract_model::{ServerResponse, WizardMessage},
+    models::{
+        api_models::{
+            ContractMetadata, DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
+        },
+        db_models::{Contract, Deployment},
+    },
     repository::mongodb_repo::MongoRepo,
     utils::compiler::Compiler,
     utils::contract_utils::{
@@ -17,7 +22,7 @@ pub fn create_contract(
     compiler: &State<Compiler>,
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
-) -> Result<Json<ServerResponse>, Custom<Json<ServerResponse>>> {
+) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
     sanity_check(&wizard_message)?;
 
     let code_hash_str = hash_code(&wizard_message.code);
@@ -88,7 +93,7 @@ pub fn create_contract(
 
     match contract {
         Ok(contract_unwrapped) => {
-            let contract_save_result = db.create_contract(contract_unwrapped.clone());
+            let contract_save_result = db.create_contract(&contract_unwrapped);
             info!(
                 "create_contract called with contract: {:?}",
                 &contract_unwrapped
@@ -122,4 +127,89 @@ pub fn create_contract(
             ));
         }
     };
+}
+
+#[post("/deploy", data = "<deploy_message>")]
+pub fn new_deployment(
+    db: &State<MongoRepo>,
+    deploy_message: Json<DeployMessage>,
+) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
+    // TODO Check input
+
+    let deployment = Deployment::new(&deploy_message);
+    let deployment_save_result = db.create_deployment(&deployment);
+
+    info!("create_deployment called with: {:?}", &deployment);
+    match deployment_save_result {
+        Ok(insert_one_result) => {
+            info!("insert_one_result: {:?}", &insert_one_result);
+            Ok(Json(ServerResponse::new_valid(String::from("ok"))))
+        }
+
+        Err(_) => {
+            error!("something bad happened");
+            Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(String::from(
+                    "Error storing deployment.",
+                ))),
+            ))
+        }
+    }
+}
+
+#[get("/deployments?<user_address>&<network>")]
+pub fn get_contract_deployments(
+    db: &State<MongoRepo>,
+    user_address: String,
+    network: Option<String>,
+) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
+    // TODO Check input
+    let get_deployments = GetDeploymentsMessage {
+        user_address,
+        network,
+    };
+    let deployments = db.get_deployments(&get_deployments);
+
+    match deployments {
+        Ok(deployments_unwrapped) => Ok(Json(ServerResponse::new_valid(deployments_unwrapped))),
+        Err(_) => Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Error getting deployments.",
+            ))),
+        )),
+    }
+}
+
+#[get("/contract-metadata?<code_id>")]
+pub fn get_contract_metadata(
+    db: &State<MongoRepo>,
+    code_id: String,
+) -> Result<Json<ServerResponse<ContractMetadata>>, Custom<Json<ServerResponse<ContractMetadata>>>>
+{
+    let contract = db.get_contract_by_hash(&code_id);
+
+    match contract {
+        Ok(contract_unwrapped) => match contract_unwrapped {
+            Some(contract) => {
+                let contract_metadata = ContractMetadata {
+                    metadata: contract.metadata,
+                };
+                Ok(Json(ServerResponse::new_valid(contract_metadata)))
+            }
+            None => Err(Custom(
+                Status::NotFound,
+                Json(ServerResponse::new_error(String::from(
+                    "Contract not found.",
+                ))),
+            )),
+        },
+        Err(_) => Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Error getting contract.",
+            ))),
+        )),
+    }
 }
