@@ -19,9 +19,10 @@ pub struct Deployment {
     #[serde(skip_serializing)]
     pub id: Option<ObjectId>,
     pub contract_name: Option<String>,
-    pub address: String,
+    pub contract_address: String,
     pub network: String,
     pub code_id: String,
+    pub user_address: String,
 }
 
 impl Deployment {
@@ -29,9 +30,10 @@ impl Deployment {
         Deployment {
             id: None,
             contract_name: deploy_message.contract_name.clone(),
-            address: deploy_message.address.clone(),
+            contract_address: deploy_message.contract_address.clone(),
             network: deploy_message.network.clone(),
             code_id: deploy_message.code_id.clone(),
+            user_address: deploy_message.user_address.clone(),
         }
     }
 }

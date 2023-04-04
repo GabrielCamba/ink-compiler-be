@@ -77,10 +77,10 @@ impl MongoRepo {
 
         match &deployment_message.network {
             Some(network) if (network != "") => {
-                filter = doc! {"address": &deployment_message.address, "network": &deployment_message.network};
+                filter = doc! {"user_address": &deployment_message.user_address, "network": &deployment_message.network};
             }
             _ => {
-                filter = doc! {"address": &deployment_message.address};
+                filter = doc! {"user_address": &deployment_message.user_address};
             }
         }
 

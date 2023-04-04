@@ -1,6 +1,8 @@
 use crate::{
     models::{
-        api_models::{DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage},
+        api_models::{
+            ContractMetadata, DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
+        },
         db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
@@ -149,22 +151,24 @@ pub fn new_deployment(
             Err(Custom(
                 Status::InternalServerError,
                 Json(ServerResponse::new_error(String::from(
-                    "Error creating deployment.",
+                    "Error storing deployment.",
                 ))),
             ))
         }
     }
 }
 
-#[get("/deployments", data = "<get_deployments>")]
+#[get("/deployments?<user_address>&<network>")]
 pub fn get_contract_deployments(
     db: &State<MongoRepo>,
-    get_deployments: Json<GetDeploymentsMessage>,
+    user_address: String,
+    network: Option<String>,
 ) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
-    // Get all deployments which have the address
-    // Return them
-
     // TODO Check input
+    let get_deployments = GetDeploymentsMessage {
+        user_address,
+        network,
+    };
     let deployments = db.get_deployments(&get_deployments);
 
     match deployments {
@@ -173,6 +177,38 @@ pub fn get_contract_deployments(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
                 "Error getting deployments.",
+            ))),
+        )),
+    }
+}
+
+#[get("/contract-metadata?<code_id>")]
+pub fn get_contract_metadata(
+    db: &State<MongoRepo>,
+    code_id: String,
+) -> Result<Json<ServerResponse<ContractMetadata>>, Custom<Json<ServerResponse<ContractMetadata>>>>
+{
+    let contract = db.get_contract_by_hash(&code_id);
+
+    match contract {
+        Ok(contract_unwrapped) => match contract_unwrapped {
+            Some(contract) => {
+                let contract_metadata = ContractMetadata {
+                    metadata: contract.metadata,
+                };
+                Ok(Json(ServerResponse::new_valid(contract_metadata)))
+            }
+            None => Err(Custom(
+                Status::NotFound,
+                Json(ServerResponse::new_error(String::from(
+                    "Contract not found.",
+                ))),
+            )),
+        },
+        Err(_) => Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Error getting contract.",
             ))),
         )),
     }

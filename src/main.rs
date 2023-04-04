@@ -9,7 +9,9 @@ use dotenv::dotenv;
 #[macro_use]
 extern crate rocket;
 
-use api::contract_api::{create_contract, get_contract_deployments, new_deployment};
+use api::contract_api::{
+    create_contract, get_contract_deployments, get_contract_metadata, new_deployment,
+};
 use repository::mongodb_repo::MongoRepo;
 use utils::compiler::Compiler;
 
@@ -32,6 +34,11 @@ fn rocket() -> _ {
 
     rocket::build().manage(compiler).manage(db).mount(
         "/",
-        routes![create_contract, new_deployment, get_contract_deployments],
+        routes![
+            create_contract,
+            new_deployment,
+            get_contract_deployments,
+            get_contract_metadata
+        ],
     )
 }

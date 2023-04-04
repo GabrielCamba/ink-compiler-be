@@ -37,13 +37,19 @@ pub struct WizardMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeployMessage {
     pub contract_name: Option<String>,
-    pub address: String,
+    pub contract_address: String,
     pub network: String,
     pub code_id: String,
+    pub user_address: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetDeploymentsMessage {
-    pub address: String,
+    pub user_address: String,
     pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ContractMetadata {
+    pub metadata: String,
 }
