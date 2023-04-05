@@ -2,35 +2,6 @@
 mod contract_utils_tests {
     use super::super::*;
 
-    mod delete_files {
-        use super::*;
-
-        #[test]
-        fn works() {
-            // Create test dir
-            let dir_path = Path::new("delete_files_0");
-            create_dir(dir_path);
-
-            // Delete test dir
-            let result = delete_files(dir_path);
-
-            // Check if the dir was deleted successfully
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn dir_does_not_exist() {
-            // Test dir path
-            let dir_path = Path::new("delete_files_1");
-
-            // Delete test dir
-            let result = delete_files(dir_path);
-
-            // Check that the dir was not deleted because it does not exist
-            assert!(result.is_err());
-        }
-    }
-
     mod create_cargo_toml_file {
         use super::*;
 
@@ -64,7 +35,7 @@ mod contract_utils_tests {
             assert_eq!(toml, CARGO_TOML.replace("features_list", &features_list));
 
             // Delete test dir
-            delete_files(dir_path).expect("Could not delete files");
+            delete_files(dir_path);
         }
 
         #[test]
@@ -113,7 +84,7 @@ mod contract_utils_tests {
             assert_eq!(lib_rs, code);
 
             // Delete test dir
-            delete_files(dir_path).expect("Could not delete files");
+            delete_files(dir_path);
         }
 
         #[test]
@@ -151,7 +122,7 @@ mod contract_utils_tests {
             assert!(result.is_ok());
 
             // Delete test dir
-            delete_files(&result.unwrap()).expect("Could not delete files");
+            delete_files(&result.unwrap());
         }
 
         #[test]
@@ -174,7 +145,7 @@ mod contract_utils_tests {
             assert!(result.is_err());
 
             // Delete test dir
-            delete_files(&dir_path).expect("Could not delete files");
+            delete_files(&dir_path);
         }
     }
 
@@ -211,7 +182,7 @@ mod contract_utils_tests {
             assert!(result.is_ok());
 
             // Delete test dir
-            delete_files(dir_path).expect("Could not delete files");
+            delete_files(dir_path);
         }
 
         const LIB_RS_CODE: &str = "#![cfg_attr(not(feature = \"std\"), no_std)]

@@ -81,13 +81,13 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
     Ok(tmp_dir_path)
 }
 
-pub fn delete_files(dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete_files(dir_path: &Path) {
     debug!("Entered delete_files with dir_path: {:?}", dir_path);
     // Delete tmp folder
-    std::fs::remove_dir_all(dir_path)?;
-    info!("delete_files success");
-    Ok(())
-    //TODO Return void and if error, log it from here
+    let res = std::fs::remove_dir_all(dir_path);
+    if res.is_err() {
+        error!("Error deleting files: {:?}", res);
+    }
 }
 
 fn create_cargo_toml_file(
