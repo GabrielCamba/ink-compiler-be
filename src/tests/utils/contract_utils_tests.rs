@@ -214,16 +214,6 @@ mod contract_utils_tests {
             delete_files(dir_path).expect("Could not delete files");
         }
 
-        // TODO: Fix this test. Somehow the env variable is set even though the .env file is not loaded
-        // #[test]
-        // fn env_var_not_set() {
-        //     // Get cargo path
-        //     let cargo = env::var("CARGO");
-        //     println!("{:?}", cargo);
-        //     // Check that the cargo path is not set
-        //     assert!(cargo.is_err());
-        // }
-
         const LIB_RS_CODE: &str = "#![cfg_attr(not(feature = \"std\"), no_std)]
         #![feature(min_specialization)]
         
