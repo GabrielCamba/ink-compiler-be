@@ -108,11 +108,13 @@ impl MongoRepo {
             .deployments
             .find(filter, None)
             .ok()
-            .expect("Error getting deployments"); //TODO it should return an error instead of panicking
+            .expect("Error getting deployments");
 
         let deployments_vec: Vec<Deployment> = deployments
             .filter(|deployment| deployment.is_ok())
-            .map(|deployment| deployment.expect("Error getting deployment"))
+            .map(|deployment| {
+                deployment.expect("This will never panic because of the filter above")
+            })
             .collect();
 
         Ok(deployments_vec)
