@@ -4,6 +4,7 @@ use crate::models::api_models::GetDeploymentsMessage;
 use crate::models::db_models::{Contract, Deployment};
 use mongodb::{
     bson::{doc, extjson::de::Error},
+    options::ClientOptions,
     results::InsertOneResult,
     sync::{Client, Collection},
 };
@@ -21,16 +22,35 @@ impl MongoRepo {
             Ok(v) => v.to_string(),
             Err(_) => {
                 error!("MONGOURI environment variable not set");
-                format!("Error loading env variable")
+                std::process::exit(1);
             }
         };
 
-        let client = Client::with_uri_str(uri).unwrap();
+        let client = match Client::with_uri_str(uri) {
+            Ok(v) => v,
+            Err(_) => {
+                error!("Error connecting to MongoDB");
+                std::process::exit(1);
+            }
+        };
+
         debug!("Connected to MongoDB");
         let db = client.database("ContractWizard");
         debug!("Connected to Database");
         let contracts: Collection<Contract> = db.collection("Contracts");
         let deployments: Collection<Deployment> = db.collection("Deployments");
+
+        let ping_database = client
+            .database("ContractWizard")
+            .run_command(doc! {"ping": 1}, None);
+
+        match ping_database {
+            Ok(_) => debug!("Connected to collections"),
+            _ => {
+                error!("Error connecting to database. Connection timed out");
+                std::process::exit(1);
+            }
+        }
 
         MongoRepo {
             contracts,

@@ -20,7 +20,11 @@ use log4rs;
 
 #[launch]
 fn rocket() -> _ {
-    log4rs::init_file("logging_config.yaml", Default::default()).unwrap();
+    let logger = log4rs::init_file("logging_config.yaml", Default::default());
+    if logger.is_err() {
+        error!("Error initializing logger");
+        std::process::exit(1);
+    }
     info!("Logger Initialized");
 
     dotenv().ok();
