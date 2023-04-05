@@ -71,10 +71,7 @@ pub fn create_contract(
     );
 
     if res.is_err() {
-        let res = delete_files(&dir_path);
-        if res.is_err() {
-            warn!("Error deleting files");
-        }
+        delete_files(&dir_path);
         error!("Error compiling contract");
         return Err(Custom(
             Status::InternalServerError,
@@ -106,19 +103,15 @@ pub fn create_contract(
                     error!("something bad happened");
                 }
             };
-            let res = delete_files(&dir_path);
+            delete_files(&dir_path);
             debug!("delete_files called with arg dir_path: {:?}", &dir_path);
-            if res.is_err() {
-                warn!("Error deleting files");
-            }
+
             return Ok(Json(ServerResponse::new_valid(contract_unwrapped)));
         }
         Err(_) => {
             error!("something bad happened");
-            let res = delete_files(&dir_path);
-            if res.is_err() {
-                warn!("Error deleting files");
-            }
+            delete_files(&dir_path);
+
             return Err(Custom(
                 Status::InternalServerError,
                 Json(ServerResponse::new_error(String::from(
@@ -164,7 +157,6 @@ pub fn get_contract_deployments(
     user_address: String,
     network: Option<String>,
 ) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
-    // TODO Check input
     let get_deployments = GetDeploymentsMessage {
         user_address,
         network,

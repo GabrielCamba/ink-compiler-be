@@ -11,10 +11,10 @@ impl Compiler {
         let cargo_loc = match env::var("CARGO") {
             Ok(v) => v.to_string(),
             Err(_) => {
-                debug!("Could not find CARGO env variable");
-                format!("Error loading env variable")
+                error!("CARGO environment variable not set");
+                std::process::exit(1);
             }
-        }; //TODO Handle error better
+        };
 
         Compiler { cargo_loc }
     }

@@ -73,21 +73,31 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
     let tmp_dir_path = current_dir.join(tmp_path_string);
     create_dir(tmp_dir_path.clone())?;
 
-    create_cargo_toml_file(&wizard_message.features, &tmp_dir_path)?;
-    create_lib_rs_file(&wizard_message.code, &tmp_dir_path)?;
-    // TODO: dont return at first error, delete files and return error or return the path to be able to delete files after
+    let res_file_1 = create_cargo_toml_file(&wizard_message.features, &tmp_dir_path);
+    if res_file_1.is_err() {
+        error!("Error creating Cargo.toml file: {:?}", res_file_1);
+        delete_files(&tmp_dir_path);
+        return Err("Error creating Cargo.toml file".into());
+    }
+
+    let res_file_2 = create_lib_rs_file(&wizard_message.code, &tmp_dir_path);
+    if res_file_2.is_err() {
+        error!("Error creating lib.rs file: {:?}", res_file_2);
+        delete_files(&tmp_dir_path);
+        return Err("Error creating lib.rs file".into());
+    }
     info!("create_files success");
 
     Ok(tmp_dir_path)
 }
 
-pub fn delete_files(dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete_files(dir_path: &Path) {
     debug!("Entered delete_files with dir_path: {:?}", dir_path);
     // Delete tmp folder
-    std::fs::remove_dir_all(dir_path)?;
-    info!("delete_files success");
-    Ok(())
-    //TODO Return void and if error, log it from here
+    let res = std::fs::remove_dir_all(dir_path);
+    if res.is_err() {
+        error!("Error deleting files: {:?}", res);
+    }
 }
 
 fn create_cargo_toml_file(
