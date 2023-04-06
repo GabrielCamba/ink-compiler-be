@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 
-use crate::utils::compilation_queue::CompileRequest;
+use crate::utils::compilation_queue::CompilationRequest;
+use crate::utils::contract_utils::hash_code;
 use crate::{
     models::{
         api_models::{
@@ -11,120 +12,80 @@ use crate::{
         db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
-    utils::contract_utils::{
-        compile_contract, create_files, delete_files, get_contract_data, hash_code,
-    },
+    utils::compilation_queue::CompilationQueue,
     utils::sanity_check::sanity_check,
-    utils::{compilation_queue::CompilationQueue, compiler::Compiler},
 };
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use rocket::response::status::Custom;
 use rocket::{http::Status, serde::json::Json, State};
 
-// #[post("/contract", data = "<wizard_message>")]
-// pub fn create_contract(
-//     compiler: &State<Compiler>,
-//     db: &State<MongoRepo>,
-//     wizard_message: Json<WizardMessage>,
-// ) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
-//     sanity_check(&wizard_message)?;
+#[post("/contract", data = "<wizard_message>")]
+pub fn create_contract(
+    compilation_queue: &State<Arc<CompilationQueue>>,
+    db: &State<MongoRepo>,
+    wizard_message: Json<WizardMessage>,
+) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
+    sanity_check(&wizard_message)?;
 
-//     let code_hash_str = hash_code(&wizard_message.code);
-//     debug!("hash_code completed");
+    let code_hash_str = hash_code(&wizard_message.code);
+    debug!("hash_code completed");
 
-//     // Check if contract already exists in DB
-//     let contract_on_db = db.get_contract_by_hash(&code_hash_str);
-//     debug!("get_contract_by_hash completed");
+    // Check if contract already exists in DB
+    let contract_on_db = db.get_contract_by_hash(&code_hash_str);
+    debug!("get_contract_by_hash completed");
 
-//     match contract_on_db {
-//         Ok(contract) => match contract {
-//             Some(mut contract) => {
-//                 info!("Contract existing in the db with id: {:?}", &contract.id);
-//                 contract.id = None;
-//                 return Ok(Json(ServerResponse::new_valid(contract)));
-//             }
-//             None => (),
-//         },
-//         Err(_) => {
-//             error!("Error getting contract from db");
-//         }
-//     }
+    match contract_on_db {
+        Ok(contract) => match contract {
+            Some(mut contract) => {
+                info!("Contract existing in the db with id: {:?}", &contract.id);
+                contract.id = None;
+                return Ok(Json(ServerResponse::new_valid(contract)));
+            }
+            None => (),
+        },
+        Err(_) => {
+            error!("Error getting contract from db");
+        }
+    }
 
-//     // If it doesn't exist, create files and compile
-//     let dir_path = create_files(&wizard_message);
-//     debug!("create_files called");
+    let (tx, rx) = channel::<Result<Contract, String>>();
+    let compilation_request = CompilationRequest {
+        wizard_message: wizard_message.into_inner(),
+        code_id: code_hash_str,
+        tx: tx.clone(),
+    };
 
-//     if dir_path.is_err() {
-//         error!("Error creating files");
-//         return Err(Custom(
-//             Status::InternalServerError,
-//             Json(ServerResponse::new_error(String::from(
-//                 "Error creating files.",
-//             ))),
-//         ));
-//     }
+    compilation_queue.add_request(compilation_request);
+    let contract = rx.recv().unwrap();
 
-//     let dir_path = dir_path.expect("This won't panic because we already checked for error");
-//     info!("dir_path created: {:?}", &dir_path);
+    match contract {
+        Ok(contract_unwrapped) => {
+            let contract_save_result = db.create_contract(&contract_unwrapped);
+            info!(
+                "create_contract called with contract: {:?}",
+                &contract_unwrapped
+            );
+            match contract_save_result {
+                Ok(insert_one_result) => {
+                    info!("insert_one_result: {:?}", &insert_one_result);
+                }
+                Err(_) => {
+                    error!("something bad happened");
+                }
+            };
 
-//     // Compile contract
-//     let res = compile_contract(&compiler.cargo_loc, &dir_path);
-//     info!(
-//         "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
-//         &compiler.cargo_loc, &dir_path
-//     );
+            return Ok(Json(ServerResponse::new_valid(contract_unwrapped)));
+        }
+        Err(error_msg) => {
+            error!("something bad happened");
 
-//     if res.is_err() {
-//         delete_files(&dir_path);
-//         error!("Error compiling contract");
-//         return Err(Custom(
-//             Status::InternalServerError,
-//             Json(ServerResponse::new_error(String::from(
-//                 "Error compiling contract.",
-//             ))),
-//         ));
-//     }
-
-//     // Get contract data
-//     let contract = get_contract_data(&dir_path, &code_hash_str);
-//     debug!(
-//         "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
-//         &dir_path, &code_hash_str
-//     );
-
-//     match contract {
-//         Ok(contract_unwrapped) => {
-//             let contract_save_result = db.create_contract(&contract_unwrapped);
-//             info!(
-//                 "create_contract called with contract: {:?}",
-//                 &contract_unwrapped
-//             );
-//             match contract_save_result {
-//                 Ok(insert_one_result) => {
-//                     info!("insert_one_result: {:?}", &insert_one_result);
-//                 }
-//                 Err(_) => {
-//                     error!("something bad happened");
-//                 }
-//             };
-//             delete_files(&dir_path);
-//             debug!("delete_files called with arg dir_path: {:?}", &dir_path);
-
-//             return Ok(Json(ServerResponse::new_valid(contract_unwrapped)));
-//         }
-//         Err(_) => {
-//             error!("something bad happened");
-//             delete_files(&dir_path);
-
-//             return Err(Custom(
-//                 Status::InternalServerError,
-//                 Json(ServerResponse::new_error(String::from(
-//                     "Error getting contract data.",
-//                 ))),
-//             ));
-//         }
-//     };
-// }
+            return Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(error_msg)),
+            ));
+        }
+    };
+}
 
 #[post("/deploy", data = "<deploy_message>")]
 pub fn new_deployment(
@@ -210,21 +171,21 @@ pub fn get_contract_metadata(
     }
 }
 
-#[post("/test_queue", data = "<message>")]
-pub fn test_queue(
-    compilation_queue: &State<Arc<CompilationQueue>>,
-    message: String,
-) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
-    let (tx, rx) = channel();
-    let message = CompileRequest {
-        code: message,
-        id: 1.to_string(),
-        tx: tx.clone(),
-    };
+// #[post("/test_queue", data = "<message>")]
+// pub fn test_queue(
+//     compilation_queue: &State<Arc<CompilationQueue>>,
+//     message: String,
+// ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
+//     let (tx, rx) = channel();
+//     let message = CompileRequest {
+//         code: message,
+//         id: 1.to_string(),
+//         tx: tx.clone(),
+//     };
 
-    compilation_queue.add_request(message);
-    let data = rx.recv().unwrap();
-    println!("data: {:?}", data);
+//     compilation_queue.add_request(message);
+//     let data = rx.recv().unwrap();
+//     println!("data: {:?}", data);
 
-    Ok(Json(ServerResponse::new_valid(String::from("ok"))))
-}
+//     Ok(Json(ServerResponse::new_valid(String::from("ok"))))
+// }

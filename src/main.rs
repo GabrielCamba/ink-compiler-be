@@ -10,13 +10,10 @@ use dotenv::dotenv;
 extern crate rocket;
 
 use api::contract_api::{
-    get_contract_deployments, get_contract_metadata, new_deployment, test_queue,
+    create_contract, get_contract_deployments, get_contract_metadata, new_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{sync::Arc, thread};
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
@@ -36,10 +33,10 @@ fn rocket() -> _ {
     debug!("dotenv loaded");
 
     let queue = CompilationQueue::new();
-    let queue_ref = Arc::new(queue);
-    let queue_ref_clone = queue_ref.clone();
+    let compilation_queue = Arc::new(queue);
+    let compilation_queue_clone = compilation_queue.clone();
 
-    let compiler = Compiler::init(queue_ref_clone);
+    let compiler = Compiler::init(compilation_queue_clone);
     thread::spawn(move || {
         compiler.start();
     });
@@ -48,10 +45,10 @@ fn rocket() -> _ {
     let db = MongoRepo::init();
     debug!("mongo repo initialized");
 
-    rocket::build().manage(queue_ref).manage(db).mount(
+    rocket::build().manage(compilation_queue).manage(db).mount(
         "/",
         routes![
-            test_queue,
+            create_contract,
             new_deployment,
             get_contract_deployments,
             get_contract_metadata

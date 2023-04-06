@@ -1,15 +1,17 @@
+use super::super::models::api_models::WizardMessage;
+use crate::models::db_models::Contract;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
-pub struct CompileRequest {
-    pub code: String,
-    pub id: String,
-    pub tx: mpsc::Sender<String>,
+pub struct CompilationRequest {
+    pub wizard_message: WizardMessage,
+    pub code_id: String,
+    pub tx: mpsc::Sender<Result<Contract, String>>,
 }
 
 pub struct CompilationQueue {
-    pub queue: Arc<Mutex<Vec<CompileRequest>>>,
+    pub queue: Arc<Mutex<Vec<CompilationRequest>>>,
 }
 
 impl CompilationQueue {
@@ -19,13 +21,13 @@ impl CompilationQueue {
         }
     }
 
-    pub fn add_request(&self, request: CompileRequest) {
+    pub fn add_request(&self, request: CompilationRequest) {
         let mut queue = self.queue.lock().unwrap();
         queue.push(request);
         drop(queue);
     }
 
-    pub fn take_request(&self) -> Option<CompileRequest> {
+    pub fn take_request(&self) -> Option<CompilationRequest> {
         let mut queue = self.queue.lock().unwrap();
         if queue.is_empty() {
             None

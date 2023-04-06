@@ -1,7 +1,12 @@
 use log::debug;
 use std::{env, sync::Arc, thread};
 
-use super::compilation_queue::{CompilationQueue, CompileRequest};
+use crate::utils::contract_utils::{
+    compile_contract, create_files, delete_files, get_contract_data,
+};
+
+use super::super::models::api_models::WizardMessage;
+use super::compilation_queue::CompilationQueue;
 
 pub struct Compiler {
     pub cargo_loc: String,
@@ -38,12 +43,65 @@ impl Compiler {
             };
             if let Some(request) = request {
                 // Perform the compilation for the request here
-                println!("Compiling code: {}", request.code);
-                thread::sleep(std::time::Duration::from_millis(1000));
-                request
-                    .tx
-                    .send(format!("Compiled! {}", request.code))
-                    .unwrap();
+                println!(
+                    "Compiling code for user: {}",
+                    request.wizard_message.address
+                );
+
+                let wizard_message = request.wizard_message;
+
+                // If it doesn't exist, create files and compile
+                let dir_path = create_files(&wizard_message);
+                debug!("create_files called");
+
+                if dir_path.is_err() {
+                    error!("Error creating files");
+                    request
+                        .tx
+                        .send(Err(String::from("Error creating files.")))
+                        .unwrap();
+                    continue;
+                }
+
+                let dir_path =
+                    dir_path.expect("This won't panic because we already checked for error");
+                info!("dir_path created: {:?}", &dir_path);
+
+                // Compile contract
+                let res = compile_contract(&self.cargo_loc, &dir_path);
+                info!(
+                    "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
+                    &self.cargo_loc, &dir_path
+                );
+
+                if res.is_err() {
+                    delete_files(&dir_path);
+                    error!("Error compiling contract");
+                    request
+                        .tx
+                        .send(Err(String::from("Error compiling contract.")))
+                        .unwrap();
+                    continue;
+                }
+
+                // Get contract data
+                let contract = get_contract_data(&dir_path, &request.code_id);
+                debug!(
+                    "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
+                    &dir_path, &request.code_id
+                );
+                if contract.is_err() {
+                    delete_files(&dir_path);
+                    error!("Error getting contract data");
+                    request
+                        .tx
+                        .send(Err(String::from("Error getting contract data.")))
+                        .unwrap();
+                    continue;
+                }
+
+                request.tx.send(Ok(contract.unwrap())).unwrap();
+                delete_files(&dir_path);
             } else {
                 thread::sleep(std::time::Duration::from_millis(100));
             }
