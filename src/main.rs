@@ -13,7 +13,11 @@ use api::contract_api::{
     create_contract, get_contract_deployments, get_contract_metadata, new_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
-use std::{sync::Arc, thread};
+use rocket::fairing::AdHoc;
+use std::{
+    sync::{atomic::AtomicBool, Arc},
+    thread,
+};
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
@@ -36,8 +40,10 @@ fn rocket() -> _ {
     let compilation_queue = Arc::new(queue);
     let compilation_queue_clone = compilation_queue.clone();
 
-    let compiler = Compiler::init(compilation_queue_clone);
-    thread::spawn(move || {
+    let shutdown_flag = Arc::new(AtomicBool::new(false));
+
+    let compiler = Compiler::init(compilation_queue_clone, shutdown_flag.clone());
+    let compiler_thread = thread::spawn(move || {
         compiler.start();
     });
     debug!("compiler initialized");
@@ -45,13 +51,24 @@ fn rocket() -> _ {
     let db = MongoRepo::init();
     debug!("mongo repo initialized");
 
-    rocket::build().manage(compilation_queue).manage(db).mount(
-        "/",
-        routes![
-            create_contract,
-            new_deployment,
-            get_contract_deployments,
-            get_contract_metadata
-        ],
-    )
+    rocket::build()
+        .manage(compilation_queue)
+        .manage(db)
+        .manage(shutdown_flag.clone())
+        .mount(
+            "/",
+            routes![
+                create_contract,
+                new_deployment,
+                get_contract_deployments,
+                get_contract_metadata
+            ],
+        )
+        .attach(AdHoc::on_shutdown("Shutdown Handler", |_| {
+            Box::pin(async move {
+                info!("Shutting down");
+                shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+                compiler_thread.join().unwrap();
+            })
+        }))
 }

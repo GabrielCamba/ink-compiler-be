@@ -1,4 +1,5 @@
 use log::debug;
+use std::sync::atomic::AtomicBool;
 use std::{env, sync::Arc, thread};
 
 use crate::utils::contract_utils::{
@@ -11,10 +12,11 @@ use super::compilation_queue::CompilationQueue;
 pub struct Compiler {
     pub cargo_loc: String,
     pub compilation_queue: Arc<CompilationQueue>,
+    pub shutdown_flag: Arc<AtomicBool>,
 }
 
 impl Compiler {
-    pub fn init(compilation_queue: Arc<CompilationQueue>) -> Self {
+    pub fn init(compilation_queue: Arc<CompilationQueue>, shutdown_flag: Arc<AtomicBool>) -> Self {
         debug!("Initializing compiler");
         let cargo_loc = match env::var("CARGO") {
             Ok(v) => v.to_string(),
@@ -27,12 +29,16 @@ impl Compiler {
         Compiler {
             cargo_loc,
             compilation_queue,
+            shutdown_flag,
         }
     }
 
     pub fn start(&self) {
         debug!("Starting compiler");
-        loop {
+        while !self
+            .shutdown_flag
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
             let request = {
                 let mut queue = self.compilation_queue.queue.lock().unwrap();
                 if queue.is_empty() {
