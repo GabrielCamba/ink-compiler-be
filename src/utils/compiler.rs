@@ -7,7 +7,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn init() -> Self {
-        debug!("Initializing compiler");
+        debug!(target: "compiler", "Initializing compiler");
         let cargo_loc = match env::var("CARGO") {
             Ok(v) => v.to_string(),
             Err(_) => {

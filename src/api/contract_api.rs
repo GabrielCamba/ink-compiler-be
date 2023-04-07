@@ -13,7 +13,7 @@ use crate::{
     utils::sanity_check::sanity_check,
 };
 
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use rocket::response::status::Custom;
 use rocket::{http::Status, serde::json::Json, State};
 
@@ -26,32 +26,32 @@ pub fn create_contract(
     sanity_check(&wizard_message)?;
 
     let code_hash_str = hash_code(&wizard_message.code);
-    debug!("hash_code completed");
+    debug!(target: "compiler", "hash_code completed");
 
     // Check if contract already exists in DB
     let contract_on_db = db.get_contract_by_hash(&code_hash_str);
-    debug!("get_contract_by_hash completed");
+    debug!(target: "compiler", "get_contract_by_hash completed");
 
     match contract_on_db {
         Ok(contract) => match contract {
             Some(mut contract) => {
-                info!("Contract existing in the db with id: {:?}", &contract.id);
+                info!(target: "compiler", "Contract existing in the db with id: {:?}", &contract.id);
                 contract.id = None;
                 return Ok(Json(ServerResponse::new_valid(contract)));
             }
             None => (),
         },
         Err(_) => {
-            error!("Error getting contract from db");
+            error!(target: "compiler", "Error getting contract from db");
         }
     }
 
     // If it doesn't exist, create files and compile
     let dir_path = create_files(&wizard_message);
-    debug!("create_files called");
+    debug!(target: "compiler", "create_files called");
 
     if dir_path.is_err() {
-        error!("Error creating files");
+        error!(target: "compiler", "Error creating files");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -61,18 +61,18 @@ pub fn create_contract(
     }
 
     let dir_path = dir_path.expect("This won't panic because we already checked for error");
-    info!("dir_path created: {:?}", &dir_path);
+    info!(target: "compiler", "dir_path created: {:?}", &dir_path);
 
     // Compile contract
     let res = compile_contract(&compiler.cargo_loc, &dir_path);
-    info!(
+    info!(target: "compiler",
         "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
         &compiler.cargo_loc, &dir_path
     );
 
     if res.is_err() {
         delete_files(&dir_path);
-        error!("Error compiling contract");
+        error!(target: "compiler", "Error compiling contract");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -83,7 +83,7 @@ pub fn create_contract(
 
     // Get contract data
     let contract = get_contract_data(&dir_path, &code_hash_str);
-    debug!(
+    debug!(target: "compiler",
         "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
         &dir_path, &code_hash_str
     );
@@ -91,25 +91,25 @@ pub fn create_contract(
     match contract {
         Ok(contract_unwrapped) => {
             let contract_save_result = db.create_contract(&contract_unwrapped);
-            info!(
+            info!(target: "compiler",
                 "create_contract called with contract: {:?}",
                 &contract_unwrapped
             );
             match contract_save_result {
                 Ok(insert_one_result) => {
-                    info!("insert_one_result: {:?}", &insert_one_result);
+                    info!(target: "compiler", "insert_one_result: {:?}", &insert_one_result);
                 }
                 Err(_) => {
-                    error!("something bad happened");
+                    error!(target: "compiler", "something bad happened");
                 }
             };
             delete_files(&dir_path);
-            debug!("delete_files called with arg dir_path: {:?}", &dir_path);
+            debug!(target: "compiler", "delete_files called with arg dir_path: {:?}", &dir_path);
 
             return Ok(Json(ServerResponse::new_valid(contract_unwrapped)));
         }
         Err(_) => {
-            error!("something bad happened");
+            error!(target: "compiler", "something bad happened");
             delete_files(&dir_path);
 
             return Err(Custom(
@@ -132,15 +132,15 @@ pub fn new_deployment(
     let deployment = Deployment::new(&deploy_message);
     let deployment_save_result = db.create_deployment(&deployment);
 
-    info!("create_deployment called with: {:?}", &deployment);
+    info!(target: "compiler", "create_deployment called with: {:?}", &deployment);
     match deployment_save_result {
         Ok(insert_one_result) => {
-            info!("insert_one_result: {:?}", &insert_one_result);
+            info!(target: "compiler", "insert_one_result: {:?}", &insert_one_result);
             Ok(Json(ServerResponse::new_valid(String::from("ok"))))
         }
 
         Err(_) => {
-            error!("something bad happened");
+            error!(target: "compiler", "something bad happened");
             Err(Custom(
                 Status::InternalServerError,
                 Json(ServerResponse::new_error(String::from(

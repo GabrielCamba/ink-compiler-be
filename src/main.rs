@@ -25,16 +25,16 @@ fn rocket() -> _ {
         error!("Error initializing logger");
         std::process::exit(1);
     }
-    info!("Logger Initialized");
+    info!(target: "compiler", "Logger Initialized");
 
     dotenv().ok();
-    debug!("dotenv loaded");
+    debug!(target: "compiler", "dotenv loaded");
 
     let compiler = Compiler::init();
-    debug!("compiler initialized");
+    debug!(target: "compiler", "compiler initialized");
 
     let db = MongoRepo::init();
-    debug!("mongo repo initialized");
+    debug!(target: "compiler", "mongo repo initialized");
 
     rocket::build().manage(compiler).manage(db).mount(
         "/",

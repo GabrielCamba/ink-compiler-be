@@ -4,7 +4,6 @@ use crate::models::api_models::GetDeploymentsMessage;
 use crate::models::db_models::{Contract, Deployment};
 use mongodb::{
     bson::{doc, extjson::de::Error},
-    options::ClientOptions,
     results::InsertOneResult,
     sync::{Client, Collection},
 };
@@ -17,11 +16,11 @@ pub struct MongoRepo {
 
 impl MongoRepo {
     pub fn init() -> Self {
-        debug!("Entered MongoRepo::init()");
+        debug!(target: "compiler", "Entered MongoRepo::init()");
         let uri = match env::var("MONGOURI") {
             Ok(v) => v.to_string(),
             Err(_) => {
-                error!("MONGOURI environment variable not set");
+                error!(target: "compiler", "MONGOURI environment variable not set");
                 std::process::exit(1);
             }
         };
@@ -29,14 +28,14 @@ impl MongoRepo {
         let client = match Client::with_uri_str(uri) {
             Ok(v) => v,
             Err(_) => {
-                error!("Error connecting to MongoDB");
+                error!(target: "compiler", "Error connecting to MongoDB");
                 std::process::exit(1);
             }
         };
 
-        debug!("Connected to MongoDB");
+        debug!(target: "compiler", "Connected to MongoDB");
         let db = client.database("ContractWizard");
-        debug!("Connected to Database");
+        debug!(target: "compiler", "Connected to Database");
         let contracts: Collection<Contract> = db.collection("Contracts");
         let deployments: Collection<Deployment> = db.collection("Deployments");
 
@@ -45,9 +44,9 @@ impl MongoRepo {
             .run_command(doc! {"ping": 1}, None);
 
         match ping_database {
-            Ok(_) => debug!("Connected to collections"),
+            Ok(_) => debug!(target: "compiler", "Connected to collections"),
             _ => {
-                error!("Error connecting to database. Connection timed out");
+                error!(target: "compiler", "Error connecting to database. Connection timed out");
                 std::process::exit(1);
             }
         }
@@ -59,7 +58,7 @@ impl MongoRepo {
     }
 
     pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Error> {
-        debug!("Entered MongoRepo::create_contract()");
+        debug!(target: "compiler", "Entered MongoRepo::create_contract()");
         let contract = self
             .contracts
             .insert_one(new_contract, None)
@@ -69,7 +68,7 @@ impl MongoRepo {
     }
 
     pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
-        debug!("Entered MongoRepo::get_contract_by_hash()");
+        debug!(target: "compiler", "Entered MongoRepo::get_contract_by_hash()");
         let filter = doc! {"code_id": hash};
         let contract = self
             .contracts
@@ -80,7 +79,7 @@ impl MongoRepo {
     }
 
     pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Error> {
-        debug!("Entered MongoRepo::create_deployment()");
+        debug!(target: "compiler", "Entered MongoRepo::create_deployment()");
         let deployment = self
             .deployments
             .insert_one(new_deployment, None)
