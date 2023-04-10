@@ -1,4 +1,5 @@
 use log::debug;
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::{env, sync::Arc, thread};
 
@@ -6,13 +7,13 @@ use crate::utils::contract_utils::{
     compile_contract, create_files, delete_files, get_contract_data,
 };
 
-use super::super::models::api_models::WizardMessage;
 use super::compilation_queue::CompilationQueue;
 
 pub struct Compiler {
     pub cargo_loc: String,
     pub compilation_queue: Arc<CompilationQueue>,
     pub shutdown_flag: Arc<AtomicBool>,
+    pub dir_path: PathBuf,
 }
 
 impl Compiler {
@@ -26,15 +27,33 @@ impl Compiler {
             }
         };
 
+        let current_dir = env::current_dir().unwrap();
+        let dir_path = current_dir.join("compilation_target");
+
         Compiler {
             cargo_loc,
             compilation_queue,
             shutdown_flag,
+            dir_path,
         }
     }
 
     pub fn start(&self) {
         debug!("Starting compiler");
+
+        // Compile init contract
+        let res = compile_contract(&self.cargo_loc, &self.dir_path);
+        info!(
+            "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
+            &self.cargo_loc, &self.dir_path
+        );
+
+        if res.is_err() {
+            delete_files(&self.dir_path);
+            error!("Error compiling init contract");
+        }
+
+        // Loop and compile requests until shutdown flag is set
         while !self
             .shutdown_flag
             .load(std::sync::atomic::Ordering::Relaxed)
@@ -81,7 +100,6 @@ impl Compiler {
                 );
 
                 if res.is_err() {
-                    delete_files(&dir_path);
                     error!("Error compiling contract");
                     request
                         .tx
@@ -97,7 +115,6 @@ impl Compiler {
                     &dir_path, &request.code_id
                 );
                 if contract.is_err() {
-                    delete_files(&dir_path);
                     error!("Error getting contract data");
                     request
                         .tx
@@ -107,10 +124,14 @@ impl Compiler {
                 }
 
                 request.tx.send(Ok(contract.unwrap())).unwrap();
-                delete_files(&dir_path);
             } else {
                 thread::sleep(std::time::Duration::from_millis(100));
             }
         }
+
+        // Shutdown gracefully
+        info!("Compiler shutting down...");
+        delete_files(&self.dir_path);
+        info!("Compiler shutdown complete");
     }
 }

@@ -67,18 +67,9 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
         "Entered create_files with wizard_message: {:?}",
         &wizard_message
     );
-    let tmp_path_string = format!("/tmp/{}", wizard_message.address);
 
     let current_dir = env::current_dir().unwrap();
-    let tmp_dir_path = current_dir.join(tmp_path_string);
-    create_dir(tmp_dir_path.clone())?;
-
-    let res_file_1 = create_cargo_toml_file(&wizard_message.features, &tmp_dir_path);
-    if res_file_1.is_err() {
-        error!("Error creating Cargo.toml file: {:?}", res_file_1);
-        delete_files(&tmp_dir_path);
-        return Err("Error creating Cargo.toml file".into());
-    }
+    let tmp_dir_path = current_dir.join("./compilation_target");
 
     let res_file_2 = create_lib_rs_file(&wizard_message.code, &tmp_dir_path);
     if res_file_2.is_err() {
@@ -93,33 +84,16 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
 
 pub fn delete_files(dir_path: &Path) {
     debug!("Entered delete_files with dir_path: {:?}", dir_path);
-    // Delete tmp folder
-    let res = std::fs::remove_dir_all(dir_path);
+
+    let res = std::fs::remove_dir_all(dir_path.join("target"));
     if res.is_err() {
         error!("Error deleting files: {:?}", res);
     }
-}
 
-fn create_cargo_toml_file(
-    features: &Vec<String>,
-    dir_path: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
-    debug!(
-        "Entered create_cargo_toml_file with features: {:?} and dir_path: {:?}",
-        features, dir_path
-    );
-    // Check if sent features are allowed
-    let features_list = parse_features(features)?;
-
-    // Replace features_list in CARGO_TOML with features received
-    let cargo_toml_file_contents = CARGO_TOML.replace("features_list", &features_list);
-
-    let path = dir_path.join("Cargo.toml");
-    let mut cargo_toml_file = File::create(path)?;
-    cargo_toml_file.write_all(cargo_toml_file_contents.as_bytes())?;
-
-    info!("create_cargo_toml_file success");
-    Ok(())
+    let res = std::fs::remove_dir_all(dir_path.join("__openbrush_metadata_folder"));
+    if res.is_err() {
+        error!("Error deleting files: {:?}", res);
+    }
 }
 
 fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
