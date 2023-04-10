@@ -114,6 +114,10 @@ mod contract_utils_tests {
 
             // Delete test compilation
             delete_files(&dir_path);
+
+            // Delete test file
+            let file_path = dir_path.join("lib.rs");
+            remove_file(&file_path).expect("Error deleting file");
         }
 
         const LIB_RS_CODE: &str = "#![cfg_attr(not(feature = \"std\"), no_std)]

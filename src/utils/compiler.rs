@@ -1,4 +1,5 @@
 use log::debug;
+use std::fs::copy;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::{env, sync::Arc, thread};
@@ -40,6 +41,15 @@ impl Compiler {
 
     pub fn start(&self) {
         debug!("Starting compiler");
+
+        let source_file_path = &self.dir_path.join("template-lib.rs");
+        let destination_file_path = &self.dir_path.join("lib.rs");
+
+        // Copy the file and rename it
+        let copy_res = copy(source_file_path, destination_file_path);
+        if copy_res.is_err() {
+            error!("Error copying template-lib.rs to lib.rs");
+        }
 
         // Compile init contract
         let res = compile_contract(&self.cargo_loc, &self.dir_path);
