@@ -1,10 +1,9 @@
 use crate::models::api_models::WizardMessage;
 use crate::models::db_models::Contract;
-use crate::utils::constants::CARGO_TOML; // Maybe we can use directly from module
 use log::{debug, error, info};
 use sha2::{Digest, Sha256};
 use std::env;
-use std::fs::{create_dir, File};
+use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -107,18 +106,6 @@ fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std:
 
     info!("create_lib_rs_file success");
     Ok(())
-}
-
-fn parse_features(features: &Vec<String>) -> Result<String, Box<dyn std::error::Error>> {
-    debug!("Entered parse_features with features: {:?}", features);
-    let features_list = features
-        .iter()
-        .map(|s| format!("\"{}\"", s))
-        .collect::<Vec<String>>()
-        .join(", ");
-
-    info!("parse_features success");
-    Ok(features_list)
 }
 
 pub fn hash_code(code: &String) -> String {

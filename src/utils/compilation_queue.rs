@@ -1,6 +1,5 @@
 use super::super::models::api_models::WizardMessage;
 use crate::models::db_models::Contract;
-use serde::{Deserialize, Serialize};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 

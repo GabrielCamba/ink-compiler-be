@@ -4,7 +4,6 @@ use crate::models::api_models::GetDeploymentsMessage;
 use crate::models::db_models::{Contract, Deployment};
 use mongodb::{
     bson::{doc, extjson::de::Error},
-    options::ClientOptions,
     results::InsertOneResult,
     sync::{Client, Collection},
 };

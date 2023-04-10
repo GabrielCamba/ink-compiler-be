@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::utils::compilation_queue::CompilationRequest;
 use crate::utils::contract_utils::hash_code;
@@ -170,22 +169,3 @@ pub fn get_contract_metadata(
         )),
     }
 }
-
-// #[post("/test_queue", data = "<message>")]
-// pub fn test_queue(
-//     compilation_queue: &State<Arc<CompilationQueue>>,
-//     message: String,
-// ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
-//     let (tx, rx) = channel();
-//     let message = CompileRequest {
-//         code: message,
-//         id: 1.to_string(),
-//         tx: tx.clone(),
-//     };
-
-//     compilation_queue.add_request(message);
-//     let data = rx.recv().unwrap();
-//     println!("data: {:?}", data);
-
-//     Ok(Json(ServerResponse::new_valid(String::from("ok"))))
-// }
