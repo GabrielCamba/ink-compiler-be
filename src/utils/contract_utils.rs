@@ -13,7 +13,7 @@ pub fn compile_contract(
     cargo_path: &String,
     dir_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    debug!(
+    debug!(target: "compiler",
         "Entered utils compile_contract with params {:?} and: {:?}",
         cargo_path, dir_path
     );
@@ -27,10 +27,10 @@ pub fn compile_contract(
 
     let status = compiler_cmd.status()?;
     if !status.success() {
-        error!("Compilation failed");
+        error!(target: "compiler", "Compilation failed");
         return Err("Compilation failed".into());
     }
-    info!("Compilation success");
+    info!(target: "compiler", "Compilation success");
 
     Ok(())
 }
@@ -39,7 +39,7 @@ pub fn get_contract_data(
     dir_path: &Path,
     code_id: &String,
 ) -> Result<Contract, Box<dyn std::error::Error>> {
-    debug!(
+    debug!(target: "compiler",
         "Entered utils get_contract_data with params {:?} and: {:?}",
         dir_path, code_id
     );
@@ -57,13 +57,13 @@ pub fn get_contract_data(
         metadata,
         wasm,
     };
-    info!("get_contract_data success");
+    info!(target: "compiler", "get_contract_data success");
 
     Ok(contract)
 }
 
 pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    debug!(
+    debug!(target: "compiler",
         "Entered create_files with wizard_message: {:?}",
         &wizard_message
     );
@@ -75,28 +75,28 @@ pub fn create_files(wizard_message: &WizardMessage) -> Result<PathBuf, Box<dyn s
 
     let res_file_1 = create_cargo_toml_file(&wizard_message.features, &tmp_dir_path);
     if res_file_1.is_err() {
-        error!("Error creating Cargo.toml file: {:?}", res_file_1);
+        error!(target: "compiler", "Error creating Cargo.toml file: {:?}", res_file_1);
         delete_files(&tmp_dir_path);
         return Err("Error creating Cargo.toml file".into());
     }
 
     let res_file_2 = create_lib_rs_file(&wizard_message.code, &tmp_dir_path);
     if res_file_2.is_err() {
-        error!("Error creating lib.rs file: {:?}", res_file_2);
+        error!(target: "compiler", "Error creating lib.rs file: {:?}", res_file_2);
         delete_files(&tmp_dir_path);
         return Err("Error creating lib.rs file".into());
     }
-    info!("create_files success");
+    info!(target: "compiler", "create_files success");
 
     Ok(tmp_dir_path)
 }
 
 pub fn delete_files(dir_path: &Path) {
-    debug!("Entered delete_files with dir_path: {:?}", dir_path);
+    debug!(target: "compiler", "Entered delete_files with dir_path: {:?}", dir_path);
     // Delete tmp folder
     let res = std::fs::remove_dir_all(dir_path);
     if res.is_err() {
-        error!("Error deleting files: {:?}", res);
+        error!(target: "compiler", "Error deleting files: {:?}", res);
     }
 }
 
@@ -104,7 +104,7 @@ fn create_cargo_toml_file(
     features: &Vec<String>,
     dir_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    debug!(
+    debug!(target: "compiler",
         "Entered create_cargo_toml_file with features: {:?} and dir_path: {:?}",
         features, dir_path
     );
@@ -118,12 +118,12 @@ fn create_cargo_toml_file(
     let mut cargo_toml_file = File::create(path)?;
     cargo_toml_file.write_all(cargo_toml_file_contents.as_bytes())?;
 
-    info!("create_cargo_toml_file success");
+    info!(target: "compiler", "create_cargo_toml_file success");
     Ok(())
 }
 
 fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    debug!(
+    debug!(target: "compiler",
         "Entered create_lib_rs_file with code: {:?} and dir_path: {:?}",
         code, dir_path
     );
@@ -131,28 +131,28 @@ fn create_lib_rs_file(code: &String, dir_path: &Path) -> Result<(), Box<dyn std:
     let mut lib_rs_file = File::create(path)?;
     lib_rs_file.write_all(code.as_bytes())?;
 
-    info!("create_lib_rs_file success");
+    info!(target: "compiler", "create_lib_rs_file success");
     Ok(())
 }
 
 fn parse_features(features: &Vec<String>) -> Result<String, Box<dyn std::error::Error>> {
-    debug!("Entered parse_features with features: {:?}", features);
+    debug!(target: "compiler", "Entered parse_features with features: {:?}", features);
     let features_list = features
         .iter()
         .map(|s| format!("\"{}\"", s))
         .collect::<Vec<String>>()
         .join(", ");
 
-    info!("parse_features success");
+    info!(target: "compiler", "parse_features success");
     Ok(features_list)
 }
 
 pub fn hash_code(code: &String) -> String {
-    debug!("Entered hash_code");
+    debug!(target: "compiler", "Entered hash_code");
     let mut hasher = Sha256::new();
     hasher.update(code);
     let code_id = hasher.finalize();
-    info!("hash_code success: {:?}", code_id);
+    info!(target: "compiler", "hash_code success: {:?}", code_id);
     format!("{:x}", code_id)
 }
 

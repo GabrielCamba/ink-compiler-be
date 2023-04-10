@@ -9,7 +9,7 @@ pub fn sanity_check(
 ) -> Result<(), Custom<Json<ServerResponse<Contract>>>> {
     // Checks length of the code not passing the max allowed
     if wizard_message.code.len() > MAX_SIZE_ALLOWED {
-        error!("Code size is too big");
+        error!(target: "compiler", "Code size is too big");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -20,7 +20,7 @@ pub fn sanity_check(
 
     // Checks the address len is valid
     if wizard_message.address.len() != 48 {
-        error!("Address is not valid");
+        error!(target: "compiler", "Address is not valid");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from("Invalid address."))),
@@ -29,7 +29,7 @@ pub fn sanity_check(
 
     // Checks features not to be empty
     if wizard_message.features.is_empty() {
-        error!("Features are empty");
+        error!(target: "compiler", "Features are empty");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -41,7 +41,7 @@ pub fn sanity_check(
     // Checks all the features passed are allowed
     for feature in &wizard_message.features {
         if !ALLOWED_FEATURES.contains(&feature.as_str()) {
-            error!("Feature not allowed: {:?}", feature);
+            error!(target: "compiler", "Feature not allowed: {:?}", feature);
             return Err(Custom(
                 Status::InternalServerError,
                 Json(ServerResponse::new_error(String::from(
@@ -60,7 +60,7 @@ pub fn sanity_check(
             if !found {
                 found = true;
             } else {
-                error!("Feature contains ambiguous contract standard");
+                error!(target: "compiler", "Feature contains ambiguous contract standard");
                 return Err(Custom(
                     Status::InternalServerError,
                     Json(ServerResponse::new_error(String::from(
@@ -72,7 +72,7 @@ pub fn sanity_check(
     }
     // here it checks at least one standard was found
     if !found {
-        error!("Features must contain at least one contract standard");
+        error!(target: "compiler", "Features must contain at least one contract standard");
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
