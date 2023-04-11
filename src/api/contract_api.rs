@@ -1,3 +1,8 @@
+use std::sync::mpsc::channel;
+use std::sync::Arc;
+
+use crate::utils::compilation_queue::CompilationRequest;
+use crate::utils::contract_utils::hash_code;
 use crate::{
     models::{
         api_models::{
@@ -6,20 +11,16 @@ use crate::{
         db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
-    utils::compiler::Compiler,
-    utils::contract_utils::{
-        compile_contract, create_files, delete_files, get_contract_data, hash_code,
-    },
+    utils::compilation_queue::CompilationQueue,
     utils::sanity_check::sanity_check,
 };
-
 use log::{debug, error, info};
 use rocket::response::status::Custom;
 use rocket::{http::Status, serde::json::Json, State};
 
 #[post("/contract", data = "<wizard_message>")]
 pub fn create_contract(
-    compiler: &State<Compiler>,
+    compilation_queue: &State<Arc<CompilationQueue>>,
     db: &State<MongoRepo>,
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
@@ -46,47 +47,15 @@ pub fn create_contract(
         }
     }
 
-    // If it doesn't exist, create files and compile
-    let dir_path = create_files(&wizard_message);
-    debug!(target: "compiler", "create_files called");
+    let (tx, rx) = channel::<Result<Contract, String>>();
+    let compilation_request = CompilationRequest {
+        wizard_message: wizard_message.into_inner(),
+        code_id: code_hash_str,
+        tx: tx.clone(),
+    };
 
-    if dir_path.is_err() {
-        error!(target: "compiler", "Error creating files");
-        return Err(Custom(
-            Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
-                "Error creating files.",
-            ))),
-        ));
-    }
-
-    let dir_path = dir_path.expect("This won't panic because we already checked for error");
-    info!(target: "compiler", "dir_path created: {:?}", &dir_path);
-
-    // Compile contract
-    let res = compile_contract(&compiler.cargo_loc, &dir_path);
-    info!(target: "compiler",
-        "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
-        &compiler.cargo_loc, &dir_path
-    );
-
-    if res.is_err() {
-        delete_files(&dir_path);
-        error!(target: "compiler", "Error compiling contract");
-        return Err(Custom(
-            Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
-                "Error compiling contract.",
-            ))),
-        ));
-    }
-
-    // Get contract data
-    let contract = get_contract_data(&dir_path, &code_hash_str);
-    debug!(target: "compiler",
-        "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
-        &dir_path, &code_hash_str
-    );
+    compilation_queue.add_request(compilation_request);
+    let contract = rx.recv().unwrap();
 
     match contract {
         Ok(contract_unwrapped) => {
@@ -103,20 +72,15 @@ pub fn create_contract(
                     error!(target: "compiler", "something bad happened");
                 }
             };
-            delete_files(&dir_path);
-            debug!(target: "compiler", "delete_files called with arg dir_path: {:?}", &dir_path);
 
             return Ok(Json(ServerResponse::new_valid(contract_unwrapped)));
         }
-        Err(_) => {
-            error!(target: "compiler", "something bad happened");
-            delete_files(&dir_path);
+        Err(error_msg) => {
+            error!("something bad happened");
 
             return Err(Custom(
                 Status::InternalServerError,
-                Json(ServerResponse::new_error(String::from(
-                    "Error getting contract data.",
-                ))),
+                Json(ServerResponse::new_error(error_msg)),
             ));
         }
     };

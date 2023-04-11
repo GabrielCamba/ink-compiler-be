@@ -1,79 +1,30 @@
 #[cfg(test)]
 mod contract_utils_tests {
     use super::super::*;
-
-    mod create_cargo_toml_file {
-        use super::*;
-
-        #[test]
-        fn works() {
-            // Create test dir
-            let dir_path = Path::new("create_cargo_toml_file_0");
-            create_dir(dir_path).expect("Could not create dir");
-
-            // Test features
-            let features = vec!["psp22".to_string()];
-
-            // Create file
-            let result = create_cargo_toml_file(&features, dir_path);
-
-            // Check if the file was created successfully
-            assert!(result.is_ok());
-
-            // Open and read file content
-            let mut toml_file =
-                File::open(dir_path.join("Cargo.toml")).expect("Could not open file");
-
-            let mut toml = String::new();
-            toml_file
-                .read_to_string(&mut toml)
-                .expect("Could not read file");
-
-            let features_list = parse_features(&features).expect("Could not check features");
-
-            // Check file content
-            assert_eq!(toml, CARGO_TOML.replace("features_list", &features_list));
-
-            // Delete test dir
-            delete_files(dir_path);
-        }
-
-        #[test]
-        fn dir_does_not_exist() {
-            // Test dir path
-            let dir_path = Path::new("create_cargo_toml_file_1");
-
-            // Test features
-            let features = vec!["psp22".to_string()];
-
-            // Create file
-            let result = create_cargo_toml_file(&features, dir_path);
-
-            // Check that the file was not created because the dir does not exist
-            assert!(result.is_err());
-        }
-    }
+    use std::fs::remove_file;
 
     mod create_lib_rs_file {
+        use std::fs::remove_file;
+
         use super::*;
 
         #[test]
         fn works() {
             // Create test dir
-            let dir_path = Path::new("create_lib_rs_file_0");
-            create_dir(dir_path).expect("Could not create dir");
+            let current_dir = env::current_dir().unwrap();
 
             // Test code
             let code = "fn main() { println!(\"Hello, world!\"); }".to_string();
 
             // Create file
-            let result = create_lib_rs_file(&code, dir_path);
+            let result = create_lib_rs_file(&code, &current_dir);
 
             // Check if the file was created successfully
             assert!(result.is_ok());
 
             // Open and read file content
-            let mut lib_rs_file = File::open(dir_path.join("lib.rs")).expect("Could not open file");
+            let mut lib_rs_file =
+                File::open(current_dir.join("lib.rs")).expect("Could not open file");
 
             let mut lib_rs = String::new();
             lib_rs_file
@@ -83,8 +34,11 @@ mod contract_utils_tests {
             // Check file content
             assert_eq!(lib_rs, code);
 
-            // Delete test dir
-            delete_files(dir_path);
+            // File path
+            let file_path = current_dir.join("lib.rs");
+
+            // Delete test file
+            remove_file(&file_path).expect("Error deleting file");
         }
 
         #[test]
@@ -121,31 +75,12 @@ mod contract_utils_tests {
             // Check if the files were created successfully
             assert!(result.is_ok());
 
-            // Delete test dir
-            delete_files(&result.unwrap());
-        }
+            // Delete test files
+            let current_dir = env::current_dir().unwrap();
+            let dir_path = current_dir.join("./compilation_target");
+            let file_path = dir_path.join("lib.rs");
 
-        #[test]
-        fn dir_already_exists() {
-            // Create test dir
-            let dir_path = Path::new("/tmp/5Dsykc2KUHcziwcTgZkHxyDDTotBJbGNh3BakfZ5PdDGMzfm");
-            create_dir(dir_path).expect("Could not create dir");
-
-            // Create WizardMessage
-            let wizard_message = WizardMessage {
-                address: "5Dsykc2KUHcziwcTgZkHxyDDTotBJbGNh3BakfZ5PdDGMzfm".to_string(),
-                features: vec!["psp22".to_string()],
-                code: "fn main() { println!(\"Hello, world!\"); }".to_string(),
-            };
-
-            // Create files
-            let result = create_files(&wizard_message);
-
-            // Check that the files were not created because the dir already exists
-            assert!(result.is_err());
-
-            // Delete test dir
-            delete_files(&dir_path);
+            remove_file(&file_path).expect("Error deleting file");
         }
     }
 
@@ -164,25 +99,25 @@ mod contract_utils_tests {
             let cargo = env::var("CARGO").expect("CARGO env variable not set");
 
             // Create test dir
-            let dir_path = Path::new("compile_contract_0");
-            create_dir(dir_path).expect("Could not create dir");
+            let current_dir = env::current_dir().unwrap();
+            let dir_path = current_dir.join("compilation_target");
 
             // Create lib.rs file
-            create_lib_rs_file(&LIB_RS_CODE.to_string(), dir_path)
+            create_lib_rs_file(&LIB_RS_CODE.to_string(), &dir_path)
                 .expect("Could not create lib.rs file");
 
-            // Create Cargo.toml file
-            let features = vec!["psp22".to_string(), "ownable".to_string()];
-            create_cargo_toml_file(&features, dir_path).expect("Could not create Cargo.toml file");
-
             // Compile contract
-            let result = compile_contract(&cargo, dir_path);
+            let result = compile_contract(&cargo, &dir_path);
 
             // Check if the contract was compiled successfully
             assert!(result.is_ok());
 
-            // Delete test dir
-            delete_files(dir_path);
+            // Delete test compilation
+            delete_files(&dir_path);
+
+            // Delete test file
+            let file_path = dir_path.join("lib.rs");
+            remove_file(&file_path).expect("Error deleting file");
         }
 
         const LIB_RS_CODE: &str = "#![cfg_attr(not(feature = \"std\"), no_std)]
