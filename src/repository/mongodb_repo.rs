@@ -14,9 +14,11 @@ pub struct MongoRepo {
     deployments: Collection<Deployment>,
 }
 
+// Mongo Repo implementation
 impl MongoRepo {
+    // Create a new Mongo Repo
     pub fn init() -> Self {
-        debug!(target: "compiler", "Entered MongoRepo::init()");
+        // Generating dabase connection
         let uri = match env::var("MONGOURI") {
             Ok(v) => v.to_string(),
             Err(_) => {
@@ -33,18 +35,18 @@ impl MongoRepo {
             }
         };
 
-        debug!(target: "compiler", "Connected to MongoDB");
         let db = client.database("ContractWizard");
-        debug!(target: "compiler", "Connected to Database");
         let contracts: Collection<Contract> = db.collection("Contracts");
         let deployments: Collection<Deployment> = db.collection("Deployments");
 
+        // Test db is up and running
         let ping_database = client
             .database("ContractWizard")
             .run_command(doc! {"ping": 1}, None);
 
+        // Checking the response
         match ping_database {
-            Ok(_) => debug!(target: "compiler", "Connected to collections"),
+            Ok(_) => debug!(target: "compiler", "Connected to Database"),
             _ => {
                 error!(target: "compiler", "Error connecting to database. Connection timed out");
                 std::process::exit(1);
@@ -57,6 +59,8 @@ impl MongoRepo {
         }
     }
 
+    // TODO: do not panic! Build an error to return and log meaningfull information
+    // Insert a new contract into the database
     pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Error> {
         debug!(target: "compiler", "Entered MongoRepo::create_contract()");
         let contract = self
@@ -67,6 +71,8 @@ impl MongoRepo {
         Ok(contract)
     }
 
+    // TODO: do not panic! Build an error to return and log meaningfull information
+    // Get an existing contract from the DB
     pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
         debug!(target: "compiler", "Entered MongoRepo::get_contract_by_hash()");
         let filter = doc! {"code_id": hash};
@@ -78,6 +84,8 @@ impl MongoRepo {
         Ok(contract)
     }
 
+    // TODO: do not panic! Build an error to return and log meaningfull information
+    // Create a deployment in the database
     pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Error> {
         debug!(target: "compiler", "Entered MongoRepo::create_deployment()");
         let deployment = self
@@ -88,6 +96,8 @@ impl MongoRepo {
         Ok(deployment)
     }
 
+    // TODO: do not panic! Build an error to return and log meaningfull information
+    // Fetch stored deployments from the db
     pub fn get_deployments(
         &self,
         deployment_message: &GetDeploymentsMessage,

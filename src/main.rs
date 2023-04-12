@@ -10,7 +10,7 @@ use dotenv::dotenv;
 extern crate rocket;
 
 use api::contract_api::{
-    create_contract, get_contract_deployments, get_contract_metadata, new_deployment,
+    fetch_or_compile_contract, get_contract_deployments, get_contract_metadata, store_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
@@ -24,8 +24,10 @@ use utils::compiler::Compiler;
 use log::{debug, info};
 use log4rs;
 
+// Rocket launching the server in rocket function
 #[launch]
 fn rocket() -> _ {
+    // Creating the logger and checking it's ok.
     let logger = log4rs::init_file("logging_config.yaml", Default::default());
     if logger.is_err() {
         error!("Error initializing logger");
@@ -33,24 +35,30 @@ fn rocket() -> _ {
     }
     info!(target: "compiler", "Logger Initialized");
 
+    // Loading env variables
     dotenv().ok();
     debug!(target: "compiler", "dotenv loaded");
 
+    // Creating compilation queue
     let queue = CompilationQueue::new();
     let compilation_queue = Arc::new(queue);
     let compilation_queue_clone = compilation_queue.clone();
 
+    // Setting shutdown flag to perform operations when the server is shutting down
     let shutdown_flag = Arc::new(AtomicBool::new(false));
 
+    // Creating compiler instance and running a new thread
     let compiler = Compiler::init(compilation_queue_clone, shutdown_flag.clone());
     let compiler_thread = thread::spawn(move || {
         compiler.start();
     });
     debug!(target: "compiler", "compiler initialized");
 
+    // Initializing mongo
     let db = MongoRepo::init();
     debug!(target: "compiler", "mongo repo initialized");
 
+    // Initializing the server
     rocket::build()
         .manage(compilation_queue)
         .manage(db)
@@ -58,8 +66,8 @@ fn rocket() -> _ {
         .mount(
             "/",
             routes![
-                create_contract,
-                new_deployment,
+                fetch_or_compile_contract,
+                store_deployment,
                 get_contract_deployments,
                 get_contract_metadata
             ],

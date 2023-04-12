@@ -3,29 +3,35 @@ use crate::models::db_models::Contract;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
+// Compilation Request structure
 pub struct CompilationRequest {
     pub wizard_message: WizardMessage,
     pub code_id: String,
     pub tx: mpsc::Sender<Result<Contract, String>>,
 }
 
+// Compilation Queue is a thread-safe queue that holds CompilationRequests
 pub struct CompilationQueue {
     pub queue: Arc<Mutex<Vec<CompilationRequest>>>,
 }
 
+// Compilation Queue implementation
 impl CompilationQueue {
+    // Create a new CompilationQueue
     pub fn new() -> CompilationQueue {
         CompilationQueue {
             queue: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
+    // Add a CompilationRequest to the queue
     pub fn add_request(&self, request: CompilationRequest) {
         let mut queue = self.queue.lock().unwrap();
         queue.push(request);
         drop(queue);
     }
 
+    // TODO: Check if this is the same logic as the one in the compiler
     pub fn take_request(&self) -> Option<CompilationRequest> {
         let mut queue = self.queue.lock().unwrap();
         if queue.is_empty() {
@@ -34,6 +40,4 @@ impl CompilationQueue {
             Some(queue.remove(0))
         }
     }
-
-    pub fn start(&self) {}
 }
