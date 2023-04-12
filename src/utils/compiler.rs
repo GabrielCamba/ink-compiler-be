@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error, info};
 use std::fs::copy;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
@@ -10,6 +10,7 @@ use crate::utils::contract_utils::{
 
 use super::compilation_queue::CompilationQueue;
 
+// Compiler is a singleton that handles the compilation of contracts
 pub struct Compiler {
     pub cargo_loc: String,
     pub compilation_queue: Arc<CompilationQueue>,
@@ -17,17 +18,20 @@ pub struct Compiler {
     pub dir_path: PathBuf,
 }
 
+// Compiler implementation
 impl Compiler {
+    // Initializes the compiler
     pub fn init(compilation_queue: Arc<CompilationQueue>, shutdown_flag: Arc<AtomicBool>) -> Self {
-        debug!(target: "compiler", "Initializing compiler");
+        info!(target: "compiler", "Initializing compiler");
         let cargo_loc = match env::var("CARGO") {
             Ok(v) => v.to_string(),
             Err(_) => {
-                error!("CARGO environment variable not set");
+                error!(target: "compiler", "CARGO environment variable not set");
                 std::process::exit(1);
             }
         };
 
+        // Create the directory for the compiler
         let current_dir = env::current_dir().unwrap();
         let dir_path = current_dir.join("compilation_target");
 
@@ -39,35 +43,38 @@ impl Compiler {
         }
     }
 
+    // Main compiler function
+    // It has 3 stages:
+    // Stage 1.- Initialize compiler and compile template contract
+    // Stage 2.- Loop that takes compilation requests from the queue
+    // Stage 3.- Shutdown
     pub fn start(&self) {
-        debug!("Starting compiler");
-
+        // Stage 1
+        // Create the directory for the compiler
         let source_file_path = &self.dir_path.join("template-lib.rs");
         let destination_file_path = &self.dir_path.join("lib.rs");
 
         // Copy the file and rename it
         let copy_res = copy(source_file_path, destination_file_path);
         if copy_res.is_err() {
-            error!("Error copying template-lib.rs to lib.rs");
+            error!(target: "compiler", "Error copying template-lib.rs to lib.rs");
         }
 
         // Compile init contract
         let res = compile_contract(&self.cargo_loc, &self.dir_path);
-        info!(
-            "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
-            &self.cargo_loc, &self.dir_path
-        );
 
         if res.is_err() {
             delete_files(&self.dir_path);
-            error!("Error compiling init contract");
+            error!(target: "compiler", "Error compiling init contract");
         }
 
+        // Stage 2.-
         // Loop and compile requests until shutdown flag is set
         while !self
             .shutdown_flag
             .load(std::sync::atomic::Ordering::Relaxed)
         {
+            // Take a request from the queue
             let request = {
                 let mut queue = self.compilation_queue.queue.lock().unwrap();
                 if queue.is_empty() {
@@ -76,21 +83,23 @@ impl Compiler {
                     Some(queue.remove(0))
                 }
             };
+
+            // Checking if there's something to do
             if let Some(request) = request {
                 // Perform the compilation for the request here
-                println!(
+                info!(target: "compiler",
                     "Compiling code for user: {}",
                     request.wizard_message.address
                 );
 
                 let wizard_message = request.wizard_message;
 
-                // If it doesn't exist, create files and compile
+                // TODO: Rename create_files in favor of override_lib or contract or something like that
+                // TODO: Rename dir_path in favor of override result or something like that
                 let dir_path = create_files(&wizard_message);
-                debug!("create_files called");
 
                 if dir_path.is_err() {
-                    error!("Error creating files");
+                    error!(target: "compiler", "Error creating files");
                     request
                         .tx
                         .send(Err(String::from("Error creating files.")))
@@ -100,17 +109,17 @@ impl Compiler {
 
                 let dir_path =
                     dir_path.expect("This won't panic because we already checked for error");
-                info!("dir_path created: {:?}", &dir_path);
 
                 // Compile contract
                 let res = compile_contract(&self.cargo_loc, &dir_path);
-                info!(
+                info!(target: "compiler",
                     "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
                     &self.cargo_loc, &dir_path
                 );
 
+                // Evaluate compilation result
                 if res.is_err() {
-                    error!("Error compiling contract");
+                    error!(target: "compiler", "Error compiling contract");
                     request
                         .tx
                         .send(Err(String::from("Error compiling contract.")))
@@ -125,7 +134,7 @@ impl Compiler {
                     &dir_path, &request.code_id
                 );
                 if contract.is_err() {
-                    error!("Error getting contract data");
+                    error!(target: "compiler", "Error getting contract data");
                     request
                         .tx
                         .send(Err(String::from("Error getting contract data.")))
@@ -139,9 +148,10 @@ impl Compiler {
             }
         }
 
+        // Stage 3 .-
         // Shutdown gracefully
-        info!("Compiler shutting down...");
+        info!(target: "compiler", "Compiler shutting down...");
         delete_files(&self.dir_path);
-        info!("Compiler shutdown complete");
+        info!(target: "compiler", "Compiler shutdown complete");
     }
 }
