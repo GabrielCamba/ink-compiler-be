@@ -3,7 +3,7 @@ use std::env;
 use crate::models::api_models::GetDeploymentsMessage;
 use crate::models::db_models::{Contract, Deployment};
 use mongodb::{
-    bson::{doc, extjson::de::Error},
+    bson::doc,
     results::InsertOneResult,
     sync::{Client, Collection},
 };

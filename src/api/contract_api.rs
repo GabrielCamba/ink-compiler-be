@@ -6,7 +6,7 @@ use crate::utils::contract_utils::hash_code;
 use crate::{
     models::{
         api_models::{
-            ContractMetadata, DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
+            DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
         },
         db_models::{Contract, Deployment},
     },
