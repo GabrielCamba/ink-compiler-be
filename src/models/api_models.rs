@@ -48,8 +48,3 @@ pub struct GetDeploymentsMessage {
     pub user_address: String,
     pub network: Option<String>,
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ContractMetadata {
-    pub metadata: String,
-}

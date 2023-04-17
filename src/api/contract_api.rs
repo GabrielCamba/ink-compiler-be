@@ -6,7 +6,7 @@ use crate::utils::contract_utils::hash_code;
 use crate::{
     models::{
         api_models::{
-            ContractMetadata, DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
+            DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
         },
         db_models::{Contract, Deployment},
     },
@@ -165,35 +165,43 @@ pub fn get_contract_deployments(
 }
 
 // /contract-metadata endpoint for fetching a contract's metadata
-#[get("/contract-metadata?<code_id>")]
-pub fn get_contract_metadata(
+#[get("/contract?<code_id>&<wasm>")]
+pub fn get_contract(
     db: &State<MongoRepo>,
     code_id: String,
-) -> Result<Json<ServerResponse<ContractMetadata>>, Custom<Json<ServerResponse<ContractMetadata>>>>
+    wasm: bool,
+) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>>
 {
     // Fetching metadata from code_id
-    let contract = db.get_contract_by_hash(&code_id);
+    let db_result = db.get_contract_by_hash(&code_id);
 
     // Evaluate the result of the fetch operation and building the response on each case
-    match contract {
-        Ok(contract_unwrapped) => match contract_unwrapped {
-            Some(contract) => {
-                info!(target: "compiler", "Contract metadata found for {}", &contract.code_id);
-                let contract_metadata = ContractMetadata {
-                    metadata: contract.metadata,
-                };
-                Ok(Json(ServerResponse::new_valid(contract_metadata)))
-            }
-            None => {
-                info!(target: "compiler", "Contract metadata was not found for {}", &code_id);
-                Err(Custom(
+    match db_result {
+        Ok(contract) => {
+            if contract.is_none() {
+                info!(target: "compiler", "Contract was not found for {}", &code_id);
+                return Err(Custom(
                     Status::NotFound,
                     Json(ServerResponse::new_error(String::from(
                         "Contract not found.",
                     ))),
-                ))
+                ));
             }
-        },
+
+            // This is not going to panic because we already checked that the contract is not None
+            let mut contract = contract.unwrap();
+
+            if !wasm {
+                    contract = Contract {
+                        id: None,
+                        code_id: contract.code_id,
+                        metadata: contract.metadata,
+                        wasm: vec![], // Empty wasm
+                    };
+                }
+
+                return Ok(Json(ServerResponse::new_valid(contract)));
+            }
         Err(_) => {
             error!(target: "compiler", "There was DB error fetching metadata for {}", &code_id);
             Err(Custom(

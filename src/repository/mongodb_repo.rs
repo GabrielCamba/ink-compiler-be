@@ -3,7 +3,7 @@ use std::env;
 use crate::models::api_models::GetDeploymentsMessage;
 use crate::models::db_models::{Contract, Deployment};
 use mongodb::{
-    bson::{doc, extjson::de::Error},
+    bson::doc,
     results::InsertOneResult,
     sync::{Client, Collection},
 };
@@ -59,49 +59,40 @@ impl MongoRepo {
         }
     }
 
-    // TODO: do not panic! Build an error to return and log meaningfull information
+    // TODO: log meaningfull information
     // Insert a new contract into the database
-    pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Error> {
-        debug!(target: "compiler", "Entered MongoRepo::create_contract()");
+    pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
         let contract = self
             .contracts
-            .insert_one(new_contract, None)
-            .ok()
-            .expect("Error creating contract");
+            .insert_one(new_contract, None)?;        
         Ok(contract)
     }
 
     // TODO: do not panic! Build an error to return and log meaningfull information
     // Get an existing contract from the DB
-    pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>, Error> {
-        debug!(target: "compiler", "Entered MongoRepo::get_contract_by_hash()");
+    pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>,  Box<dyn std::error::Error>> {
         let filter = doc! {"code_id": hash};
         let contract = self
             .contracts
-            .find_one(filter, None)
-            .ok()
-            .expect("There was an error fetching the contract");
+            .find_one(filter, None)?;
         Ok(contract)
     }
 
-    // TODO: do not panic! Build an error to return and log meaningfull information
+    // TODO: log meaningfull information
     // Create a deployment in the database
-    pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Error> {
-        debug!(target: "compiler", "Entered MongoRepo::create_deployment()");
+    pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
         let deployment = self
             .deployments
-            .insert_one(new_deployment, None)
-            .ok()
-            .expect("Error creating deployment");
+            .insert_one(new_deployment, None)?;
         Ok(deployment)
     }
 
-    // TODO: do not panic! Build an error to return and log meaningfull information
+    // TODO: log meaningfull information
     // Fetch stored deployments from the db
     pub fn get_deployments(
         &self,
         deployment_message: &GetDeploymentsMessage,
-    ) -> Result<Vec<Deployment>, Error> {
+    ) -> Result<Vec<Deployment>, Box<dyn std::error::Error>> {
         let filter;
 
         match &deployment_message.network {
@@ -115,9 +106,7 @@ impl MongoRepo {
 
         let deployments = self
             .deployments
-            .find(filter, None)
-            .ok()
-            .expect("Error getting deployments");
+            .find(filter, None)?;
 
         let deployments_vec: Vec<Deployment> = deployments
             .filter(|deployment| deployment.is_ok())
