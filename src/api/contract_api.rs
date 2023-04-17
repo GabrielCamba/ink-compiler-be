@@ -65,7 +65,18 @@ pub fn fetch_or_compile_contract(
     compilation_queue.add_request(compilation_request);
 
     // Waiting for the compilation thread to finish
-    let contract = rx.recv().unwrap();
+    let comp_msg = rx.recv();
+
+    if comp_msg.is_err() {
+        error!(target: "compiler", "Error receiving compilation result from channel");
+        return Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error("Error compiling contract".to_string())),
+        ));
+    }
+
+    // Getting the compilation result
+    let contract = comp_msg.expect("This will never panic because we checked for errors before");
 
     // Checking if compilation was successful
     match contract {

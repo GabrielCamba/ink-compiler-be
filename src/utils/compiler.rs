@@ -88,15 +88,18 @@ impl Compiler {
 
                 let wizard_message = request.wizard_message;
 
-                // TODO: Rename create_files in favor of override_lib or contract or something like thats
                 let compile_res = self.create_contract_files(&wizard_message);
 
                 if compile_res.is_err() {
                     error!(target: "compiler", "Error creating files");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error creating files.")))
-                        .unwrap();
+                        .send(Err(String::from("Error creating files.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    } 
+                    
                     continue;
                 }
 
@@ -106,10 +109,14 @@ impl Compiler {
                 // Evaluate compilation result
                 if res.is_err() {
                     error!(target: "compiler", "Error compiling contract");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error compiling contract.")))
-                        .unwrap();
+                        .send(Err(String::from("Error compiling contract.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    }
+
                     continue;
                 }
 
@@ -118,14 +125,21 @@ impl Compiler {
                
                 if contract.is_err() {
                     error!(target: "compiler", "Error getting contract data");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error getting contract data.")))
-                        .unwrap();
+                        .send(Err(String::from("Error getting contract data.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    } 
+
                     continue;
                 }
 
-                request.tx.send(Ok(contract.unwrap())).unwrap();
+                let msg_res = request.tx.send(Ok(contract.expect("This will not panic because we already checked for errors")));
+                if msg_res.is_err() {
+                    error!(target: "compiler", "Error sending message");
+                } 
             } else {
                 thread::sleep(std::time::Duration::from_millis(100));
             }
