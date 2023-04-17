@@ -28,7 +28,6 @@ impl CompilationQueue {
     pub fn add_request(&self, request: CompilationRequest) {
         let mut queue = self.queue.lock().unwrap();
         queue.push(request);
-        drop(queue);
     }
 
     // Take a CompilationRequest from the queue
