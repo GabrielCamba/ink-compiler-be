@@ -26,13 +26,13 @@ impl CompilationQueue {
 
     // Add a CompilationRequest to the queue
     pub fn add_request(&self, request: CompilationRequest) {
-        let mut queue = self.queue.lock().unwrap();
+        let mut queue = self.queue.lock().expect("Error locking queue");
         queue.push(request);
     }
 
     // Take a CompilationRequest from the queue
     pub fn take_request(&self) -> Option<CompilationRequest> {
-        let mut queue = self.queue.lock().unwrap();
+        let mut queue = self.queue.lock().expect("Error locking queue");
         if queue.is_empty() {
             None
         } else {

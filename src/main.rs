@@ -78,7 +78,13 @@ fn rocket() -> _ {
             Box::pin(async move {
                 info!("Shutting down");
                 shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
-                compiler_thread.join().unwrap();
+                let join_res = compiler_thread.join();
+
+                if join_res.is_err() {
+                    error!("Error joining compiler thread");
+                }
+
+                info!("Shutdown complete");
             })
         }))
         .attach(CORS)

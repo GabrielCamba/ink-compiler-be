@@ -33,7 +33,14 @@ impl Compiler {
         };
 
         // Create the directory for the compiler
-        let current_dir = env::current_dir().unwrap();
+        let current_dir = env::current_dir();
+        if current_dir.is_err() {
+            error!(target: "compiler", "Error getting current directory");
+            std::process::exit(1);
+        }
+
+        let current_dir = current_dir.expect("This will never panic because we checked for errors before");
+
         let dir_path = current_dir.join("compilation_target");
 
         Compiler {
