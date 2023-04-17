@@ -75,14 +75,7 @@ impl Compiler {
             .load(std::sync::atomic::Ordering::Relaxed)
         {
             // Take a request from the queue
-            let request = {
-                let mut queue = self.compilation_queue.queue.lock().unwrap();
-                if queue.is_empty() {
-                    None
-                } else {
-                    Some(queue.remove(0))
-                }
-            };
+            let request = self.compilation_queue.take_request();
 
             // Checking if there's something to do
             if let Some(request) = request {

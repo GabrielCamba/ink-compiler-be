@@ -31,7 +31,7 @@ impl CompilationQueue {
         drop(queue);
     }
 
-    // TODO: Check if this is the same logic as the one in the compiler
+    // Take a CompilationRequest from the queue
     pub fn take_request(&self) -> Option<CompilationRequest> {
         let mut queue = self.queue.lock().unwrap();
         if queue.is_empty() {
