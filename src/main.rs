@@ -10,7 +10,7 @@ use dotenv::dotenv;
 extern crate rocket;
 
 use api::contract_api::{
-    fetch_or_compile_contract, get_contract_deployments, get_contract_metadata, store_deployment,
+    fetch_or_compile_contract, get_contract_deployments, get_contract, store_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
@@ -69,7 +69,7 @@ fn rocket() -> _ {
                 fetch_or_compile_contract,
                 store_deployment,
                 get_contract_deployments,
-                get_contract_metadata
+                get_contract
             ],
         )
         .attach(AdHoc::on_shutdown("Shutdown Handler", |_| {
