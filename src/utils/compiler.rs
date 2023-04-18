@@ -98,6 +98,7 @@ impl Compiler {
                 let compile_res = self.create_contract_files(&wizard_message);
 
                 if compile_res.is_err() {
+                    self.delete_compilation_files();
                     error!(target: "compiler", "Error creating files");
                     let msg_res = request
                         .tx
@@ -183,23 +184,13 @@ impl Compiler {
 
     // This function is used to create the contract files in the filesystem
     fn create_contract_files(&self, wizard_message: &WizardMessage) -> Result<(), Box<dyn std::error::Error>> {
-        let res_file = self.create_lib_rs_file(&wizard_message.code);
-        // check the result
-        if res_file.is_err() {
-            error!(target: "compiler", "Error creating lib.rs file: {:?}", res_file);
-            self.delete_compilation_files();
-            return Err("Error creating lib.rs file".into());
-        }
-        info!(target: "compiler", "lib.rs successfully created");
 
-        Ok(())
-    }
-
-    // This function creates the lib.rs file in the compiling directory
-    fn create_lib_rs_file(&self, code: &String) -> Result<(), Box<dyn std::error::Error>> {
         let path = self.dir_path.join("lib.rs");
         let mut lib_rs_file = File::create(path)?;
-        lib_rs_file.write_all(code.as_bytes())?;
+        lib_rs_file.write_all(wizard_message.code.as_bytes())?;
+
+        info!(target: "compiler", "lib.rs successfully created");
+
         Ok(())
     }
 
