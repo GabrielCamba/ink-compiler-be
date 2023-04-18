@@ -21,7 +21,7 @@ use std::{
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
-use log::{debug, info};
+use log::{debug, info, error};
 use log4rs;
 
 use utils::cors::CORS;
@@ -76,15 +76,15 @@ fn rocket() -> _ {
         )
         .attach(AdHoc::on_shutdown("Shutdown Handler", |_| {
             Box::pin(async move {
-                info!("Shutting down");
+                info!(target: "compiler", "Shutting down");
                 shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
                 let join_res = compiler_thread.join();
 
                 if join_res.is_err() {
-                    error!("Error joining compiler thread");
+                    error!(target: "compiler", "Error joining compiler thread");
                 }
 
-                info!("Shutdown complete");
+                info!(target: "compiler", "Shutdown complete");
             })
         }))
         .attach(CORS)
