@@ -1,12 +1,13 @@
-use log::{debug, error, info};
-use std::fs::copy;
+use log::{error, info};
+use std::fs::{copy, File};
+use std::io::{Write, Read};
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::atomic::AtomicBool;
 use std::{env, sync::Arc, thread};
 
-use crate::utils::contract_utils::{
-    compile_contract, create_files, delete_files, get_contract_data,
-};
+use crate::models::api_models::WizardMessage;
+use crate::models::db_models::Contract;
 
 use super::compilation_queue::CompilationQueue;
 
@@ -32,7 +33,14 @@ impl Compiler {
         };
 
         // Create the directory for the compiler
-        let current_dir = env::current_dir().unwrap();
+        let current_dir = env::current_dir();
+        if current_dir.is_err() {
+            error!(target: "compiler", "Error getting current directory");
+            std::process::exit(1);
+        }
+
+        let current_dir = current_dir.expect("This will never panic because we checked for errors before");
+
         let dir_path = current_dir.join("compilation_target");
 
         Compiler {
@@ -61,10 +69,10 @@ impl Compiler {
         }
 
         // Compile init contract
-        let res = compile_contract(&self.cargo_loc, &self.dir_path);
+        let res = self.compile_contract();
 
         if res.is_err() {
-            delete_files(&self.dir_path);
+            self.delete_compilation_files();
             error!(target: "compiler", "Error compiling init contract");
         }
 
@@ -75,14 +83,7 @@ impl Compiler {
             .load(std::sync::atomic::Ordering::Relaxed)
         {
             // Take a request from the queue
-            let request = {
-                let mut queue = self.compilation_queue.queue.lock().unwrap();
-                if queue.is_empty() {
-                    None
-                } else {
-                    Some(queue.remove(0))
-                }
-            };
+            let request = self.compilation_queue.take_request();
 
             // Checking if there's something to do
             if let Some(request) = request {
@@ -94,55 +95,59 @@ impl Compiler {
 
                 let wizard_message = request.wizard_message;
 
-                // TODO: Rename create_files in favor of override_lib or contract or something like that
-                // TODO: Rename dir_path in favor of override result or something like that
-                let dir_path = create_files(&wizard_message);
+                let compile_res = self.create_contract_files(&wizard_message);
 
-                if dir_path.is_err() {
+                if compile_res.is_err() {
+                    self.delete_compilation_files();
                     error!(target: "compiler", "Error creating files");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error creating files.")))
-                        .unwrap();
+                        .send(Err(String::from("Error creating files.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    } 
+                    
                     continue;
                 }
 
-                let dir_path =
-                    dir_path.expect("This won't panic because we already checked for error");
-
                 // Compile contract
-                let res = compile_contract(&self.cargo_loc, &dir_path);
-                info!(target: "compiler",
-                    "compile contract called with compiler.cargo_loc: {:?}, and dir_path{:?}",
-                    &self.cargo_loc, &dir_path
-                );
+                let res = self.compile_contract();
 
                 // Evaluate compilation result
                 if res.is_err() {
                     error!(target: "compiler", "Error compiling contract");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error compiling contract.")))
-                        .unwrap();
+                        .send(Err(String::from("Error compiling contract.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    }
+
                     continue;
                 }
 
                 // Get contract data
-                let contract = get_contract_data(&dir_path, &request.code_id);
-                debug!(
-                    "get_contract_data called with params dir_path: {:?}, code_hash_str: {:?}",
-                    &dir_path, &request.code_id
-                );
+                let contract = self.get_contract_data(&request.code_id);
+               
                 if contract.is_err() {
                     error!(target: "compiler", "Error getting contract data");
-                    request
+                    let msg_res = request
                         .tx
-                        .send(Err(String::from("Error getting contract data.")))
-                        .unwrap();
+                        .send(Err(String::from("Error getting contract data.")));
+
+                    if msg_res.is_err() {
+                        error!(target: "compiler", "Error sending message");
+                    } 
+
                     continue;
                 }
 
-                request.tx.send(Ok(contract.unwrap())).unwrap();
+                let msg_res = request.tx.send(Ok(contract.expect("This will not panic because we already checked for errors")));
+                if msg_res.is_err() {
+                    error!(target: "compiler", "Error sending message");
+                } 
             } else {
                 thread::sleep(std::time::Duration::from_millis(100));
             }
@@ -151,7 +156,86 @@ impl Compiler {
         // Stage 3 .-
         // Shutdown gracefully
         info!(target: "compiler", "Compiler shutting down...");
-        delete_files(&self.dir_path);
+        self.delete_compilation_files();
         info!(target: "compiler", "Compiler shutdown complete");
     }
+
+    // Function called by the compiler to generate the contract wasm and metadata
+    fn compile_contract(&self) -> Result<(), Box<dyn std::error::Error>> {
+        // This is the command used to compile the contract
+        let mut binding = Command::new(self.cargo_loc.clone());
+        let compiler_cmd = binding
+            .arg("contract")
+            .arg("build")
+            .arg("--release")
+            .arg("--quiet")
+            .current_dir(self.dir_path.clone());
+
+        // Check the status of the command execution
+        let status = compiler_cmd.status()?;
+        if !status.success() {
+            error!(target: "compiler", "Compilation failed");
+            return Err("Compilation failed".into());
+        }
+        info!(target: "compiler", "Compilation success");
+
+        Ok(())
+    }
+
+    // This function is used to create the contract files in the filesystem
+    fn create_contract_files(&self, wizard_message: &WizardMessage) -> Result<(), Box<dyn std::error::Error>> {
+
+        let path = self.dir_path.join("lib.rs");
+        let mut lib_rs_file = File::create(path)?;
+        lib_rs_file.write_all(wizard_message.code.as_bytes())?;
+
+        info!(target: "compiler", "lib.rs successfully created");
+
+        Ok(())
+    }
+
+    // This function is used to delete the compiled contract files in the filesystem
+    fn delete_compilation_files(&self) {
+        let res = std::fs::remove_dir_all(self.dir_path.join("target"));
+        if res.is_err() {
+            error!(target: "compiler", "Error deleting files: {:?}", res);
+        }
+
+        let res = std::fs::remove_dir_all(self.dir_path.join("__openbrush_metadata_folder"));
+        if res.is_err() {
+            error!(target: "compiler", "Error deleting files: {:?}", res);
+        }
+    }
+    
+    // this function is used to read from the file system the wasm and metadata files generated by the compiler
+    pub fn get_contract_data(
+        &self,
+        code_id: &String,
+    ) -> Result<Contract, Box<dyn std::error::Error>> {
+        // Read compiled contract
+        let mut wasm_file = File::open(self.dir_path.join("target/ink/compiled_contract.wasm"))?;
+        let mut wasm = Vec::new();
+        wasm_file.read_to_end(&mut wasm)?;
+
+        // Read contract metadata
+        let mut metadata_file = File::open(self.dir_path.join("target/ink/compiled_contract.json"))?;
+        let mut metadata = String::new();
+        metadata_file.read_to_string(&mut metadata)?;
+
+        let contract = Contract {
+            id: None,
+            code_id: code_id.to_owned(),
+            metadata,
+            wasm,
+        };
+        info!(target: "compiler", "get_contract_data success");
+
+        Ok(contract)
+    }
+
+
 }
+
+#[cfg(test)]
+#[path = "../tests/utils/compiler_tests.rs"]
+mod compiler_tests;

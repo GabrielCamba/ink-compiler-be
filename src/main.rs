@@ -14,9 +14,6 @@ use api::contract_api::{
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
-use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::Header;
-use rocket::{Request, Response};
 use std::{
     sync::{atomic::AtomicBool, Arc},
     thread,
@@ -24,30 +21,10 @@ use std::{
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
-use log::{debug, info};
+use log::{debug, info, error};
 use log4rs;
 
-pub struct CORS;
-
-#[rocket::async_trait]
-impl Fairing for CORS {
-    fn info(&self) -> Info {
-        Info {
-            name: "Add CORS headers to responses",
-            kind: Kind::Response,
-        }
-    }
-
-    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
-        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
-        response.set_header(Header::new(
-            "Access-Control-Allow-Methods",
-            "POST, GET, PATCH, OPTIONS",
-        ));
-        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
-        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
-    }
-}
+use utils::cors::CORS;
 
 // Rocket launching the server in rocket function
 #[launch]
@@ -99,9 +76,15 @@ fn rocket() -> _ {
         )
         .attach(AdHoc::on_shutdown("Shutdown Handler", |_| {
             Box::pin(async move {
-                info!("Shutting down");
+                info!(target: "compiler", "Shutting down");
                 shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
-                compiler_thread.join().unwrap();
+                let join_res = compiler_thread.join();
+
+                if join_res.is_err() {
+                    error!(target: "compiler", "Error joining compiler thread");
+                }
+
+                info!(target: "compiler", "Shutdown complete");
             })
         }))
         .attach(CORS)

@@ -59,7 +59,6 @@ impl MongoRepo {
         }
     }
 
-    // TODO: log meaningfull information
     // Insert a new contract into the database
     pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
         let contract = self
@@ -68,7 +67,6 @@ impl MongoRepo {
         Ok(contract)
     }
 
-    // TODO: do not panic! Build an error to return and log meaningfull information
     // Get an existing contract from the DB
     pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>,  Box<dyn std::error::Error>> {
         let filter = doc! {"code_id": hash};
@@ -78,7 +76,6 @@ impl MongoRepo {
         Ok(contract)
     }
 
-    // TODO: log meaningfull information
     // Create a deployment in the database
     pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
         let deployment = self
@@ -87,7 +84,6 @@ impl MongoRepo {
         Ok(deployment)
     }
 
-    // TODO: log meaningfull information
     // Fetch stored deployments from the db
     pub fn get_deployments(
         &self,

@@ -1,8 +1,8 @@
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 
+use sha2::{Digest, Sha256};
 use crate::utils::compilation_queue::CompilationRequest;
-use crate::utils::contract_utils::hash_code;
 use crate::{
     models::{
         api_models::{
@@ -65,7 +65,18 @@ pub fn fetch_or_compile_contract(
     compilation_queue.add_request(compilation_request);
 
     // Waiting for the compilation thread to finish
-    let contract = rx.recv().unwrap();
+    let comp_msg = rx.recv();
+
+    if comp_msg.is_err() {
+        error!(target: "compiler", "Error receiving compilation result from channel");
+        return Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error("Error compiling contract".to_string())),
+        ));
+    }
+
+    // Getting the compilation result
+    let contract = comp_msg.expect("This will never panic because we checked for errors before");
 
     // Checking if compilation was successful
     match contract {
@@ -213,3 +224,13 @@ pub fn get_contract(
         }
     }
 }
+
+// This function creates the hash of the contract file
+pub fn hash_code(code: &String) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(code);
+    let code_id = hasher.finalize();
+    format!("{:x}", code_id)
+}
+
+

@@ -2,6 +2,7 @@ use super::super::models::api_models::WizardMessage;
 use crate::models::db_models::Contract;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
+use log::{error};
 
 // Compilation Request structure
 pub struct CompilationRequest {
@@ -26,14 +27,29 @@ impl CompilationQueue {
 
     // Add a CompilationRequest to the queue
     pub fn add_request(&self, request: CompilationRequest) {
-        let mut queue = self.queue.lock().unwrap();
+        let queue_res = self.queue.lock();
+
+        if queue_res.is_err() {
+            error!(target: "compiler", "Error locking queue");
+            return;
+        }
+
+        let mut queue = queue_res.expect("This will never panic because we checked for errors before");
+
         queue.push(request);
-        drop(queue);
     }
 
-    // TODO: Check if this is the same logic as the one in the compiler
+    // Take a CompilationRequest from the queue
     pub fn take_request(&self) -> Option<CompilationRequest> {
-        let mut queue = self.queue.lock().unwrap();
+        let queue_res = self.queue.lock();
+
+        if queue_res.is_err() {
+            error!(target: "compiler", "Error locking queue");
+            return None;
+        }
+
+        let mut queue = queue_res.expect("This will never panic because we checked for errors before");
+        
         if queue.is_empty() {
             None
         } else {
