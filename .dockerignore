@@ -1,0 +1,8 @@
+.git
+target
+.env.example
+.gitignore
+Dockerfile
+README.md
+.dockerignore
+LICENSE
