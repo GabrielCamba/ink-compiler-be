@@ -1,37 +1,25 @@
-FROM rust:1.67 as builder
+# Use a Rust Docker image as the base image
+FROM rust:1.67
 
+# Clone the repository
+COPY . ./ink-compiler-be
 
-RUN USER=root cargo new --bin ink-compiler
-WORKDIR ./ink-compiler
-COPY ./Cargo.toml ./Cargo.toml
-RUN cargo build --release
-RUN rm src/*.rs
+# Set the working directory
+WORKDIR /ink-compiler-be
 
-ADD . ./
+# Install Rust and compile the project
+RUN cargo build --release \
+    && rustup toolchain install nightly \
+    && rustup default nightly \
+    && rustup update \
+    && rustup component add rust-src \
+    && cargo install --force --locked cargo-contract
 
-RUN rm -r ./target/release/*
-RUN cargo build --release
-
-FROM debian:buster-slim
-ARG APP=/usr/src/app
-
-RUN apt-get update 
-RUN apt install libc6
-
+# Expose port 8000
 EXPOSE 8000
 
-ENV TZ=Etc/UTC \
-    APP_USER=appuser
+# Set the environment variable
+ENV CARGO /usr/local/cargo/bin/cargo
 
-RUN groupadd $APP_USER \
-    && useradd -g $APP_USER $APP_USER \
-    && mkdir -p ${APP}
-
-COPY --from=builder /ink-compiler/target/release/compiler-be ${APP}/compiler-be
-
-RUN chown -R $APP_USER:$APP_USER ${APP}
-
-USER $APP_USER
-WORKDIR ${APP}
-
-CMD ["./compiler-be"]
+# Run the API
+ENTRYPOINT [ "./target/release/compiler-be" ]
