@@ -16,31 +16,59 @@ pub const ALLOWED_FEATURES: [&str; 6] = [
 
 pub const MAX_SIZE_ALLOWED: usize = 49999;
 
-pub fn sanity_check(
+pub fn sanity_check_wizard_message(
     wizard_message: &Json<WizardMessage>,
 ) -> Result<(), Custom<Json<ServerResponse<Contract>>>> {
     // Checks length of the code not passing the max allowed
-    if wizard_message.code.len() > MAX_SIZE_ALLOWED {
-        error!(target: "compiler", "Code size is too big");
-        return Err(Custom(
-            Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from(
-                "Code size too big.",
-            ))),
-        ));
+    match check_code_len(&wizard_message.code) {
+        Ok(_) => (),
+        Err(msg) => {
+            return Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(String::from(msg))),
+            ))
+        }
     }
 
     // Checks the address len is valid
-    if wizard_message.address.len() != 48 {
-        error!(target: "compiler", "Address is not valid");
-        return Err(Custom(
-            Status::InternalServerError,
-            Json(ServerResponse::new_error(String::from("Invalid address."))),
-        ));
+    match check_address_len(&wizard_message.address) {
+        Ok(_) => (),
+        Err(msg) => {
+            return Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(String::from(msg))),
+            ))
+        }
     }
 
+    check_features(&wizard_message.features)?;
+
+    Ok(())
+}
+
+pub fn check_code_len(code: &String) -> Result<(), String> {
+    if code.len() > MAX_SIZE_ALLOWED {
+        error!(target: "compiler", "Code size is too big");
+        return Err("Code size too big.".to_string());
+    }
+    Ok(())
+}
+
+pub fn check_address_len(address: &String) -> Result<(), String> {
+    println!("Address: {:?}", address);
+    println!("Address len: {:?}", address.len());
+    if address.to_owned().len() != 48 {
+        error!(target: "compiler", "Address is not valid");
+        return Err("Address is not valid.".to_string());
+    }
+    Ok(())
+}
+
+pub fn check_features(
+    features: &Vec<String>,
+) -> Result<(), Custom<Json<ServerResponse<Contract>>>> {
     // Checks features not to be empty
-    if wizard_message.features.is_empty() {
+    if features.is_empty() {
         error!(target: "compiler", "Features are empty");
         return Err(Custom(
             Status::InternalServerError,
@@ -51,7 +79,7 @@ pub fn sanity_check(
     }
 
     // Checks all the features passed are allowed
-    for feature in &wizard_message.features {
+    for feature in features {
         if !ALLOWED_FEATURES.contains(&feature.as_str()) {
             error!(target: "compiler", "Feature not allowed: {:?}", feature);
             return Err(Custom(
@@ -67,7 +95,7 @@ pub fn sanity_check(
     let mut found = false;
 
     // found flag is used to check the contract has a single and allowed standard
-    for feature in &wizard_message.features {
+    for feature in features {
         if CONTRACTS.contains(&feature.as_str()) {
             if !found {
                 found = true;
