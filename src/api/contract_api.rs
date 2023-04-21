@@ -2,6 +2,7 @@ use std::sync::mpsc::channel;
 use std::sync::Arc;
 
 use crate::utils::compilation_queue::CompilationRequest;
+use crate::utils::sanity_check::check_address_len;
 use crate::{
     models::{
         api_models::{DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage},
@@ -116,7 +117,15 @@ pub fn store_deployment(
     db: &State<MongoRepo>,
     deploy_message: Json<DeployMessage>,
 ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
-    // TODO Check input
+    // Check the address is valid
+    if check_address_len(&deploy_message.user_address).is_err() {
+        return Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Invalid address length",
+            ))),
+        ));
+    }
 
     // Generating a new deployment structure and storing in db
     let deployment = Deployment::new(&deploy_message);
