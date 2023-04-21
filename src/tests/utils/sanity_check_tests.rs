@@ -23,7 +23,7 @@ mod sanity_check_tests {
             ))),
         ));
 
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -41,11 +41,11 @@ mod sanity_check_tests {
         let expected_error = Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::<Contract>::new_error(String::from(
-                "Invalid address.",
+                "Address is not valid.",
             ))),
         ));
 
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -67,7 +67,7 @@ mod sanity_check_tests {
             ))),
         ));
 
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -92,7 +92,7 @@ mod sanity_check_tests {
                 "Feature not allowed",
             ))),
         ));
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -117,7 +117,7 @@ mod sanity_check_tests {
                 "Feature contains ambiguous contract standard",
             ))),
         ));
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -138,7 +138,7 @@ mod sanity_check_tests {
                 "Features must contain at least one contract standard",
             ))),
         ));
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_error);
         assert_eq!(result.is_err(), true);
         let error = &result.err().unwrap();
@@ -156,7 +156,7 @@ mod sanity_check_tests {
 
         let expected_result = Ok(());
 
-        let result = sanity_check(&Json(wizard_message));
+        let result = sanity_check_wizard_message(&Json(wizard_message));
         assert_eq!(result, expected_result);
         assert_eq!(result.is_err(), false);
     }

@@ -1,22 +1,21 @@
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
 use crate::utils::compilation_queue::CompilationRequest;
+use crate::utils::sanity_check::check_address_len;
 use crate::{
     models::{
-        api_models::{
-            DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage,
-        },
+        api_models::{DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage},
         db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
     utils::compilation_queue::CompilationQueue,
-    utils::sanity_check::sanity_check,
+    utils::sanity_check::sanity_check_wizard_message,
 };
 use log::{debug, error, info};
 use rocket::response::status::Custom;
 use rocket::{http::Status, serde::json::Json, State};
+use sha2::{Digest, Sha256};
 
 // /contract endpoint for obtaining a new contract compilation
 #[post("/contract", data = "<wizard_message>")]
@@ -26,7 +25,7 @@ pub fn fetch_or_compile_contract(
     wizard_message: Json<WizardMessage>,
 ) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
     // Checking input data
-    sanity_check(&wizard_message)?;
+    sanity_check_wizard_message(&wizard_message)?;
 
     // Hashing the contract code to create an unique identifier
     let code_hash_str = hash_code(&wizard_message.code);
@@ -71,7 +70,9 @@ pub fn fetch_or_compile_contract(
         error!(target: "compiler", "Error receiving compilation result from channel");
         return Err(Custom(
             Status::InternalServerError,
-            Json(ServerResponse::new_error("Error compiling contract".to_string())),
+            Json(ServerResponse::new_error(
+                "Error compiling contract".to_string(),
+            )),
         ));
     }
 
@@ -116,7 +117,15 @@ pub fn store_deployment(
     db: &State<MongoRepo>,
     deploy_message: Json<DeployMessage>,
 ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
-    // TODO Check input
+    // Check the address is valid
+    if check_address_len(&deploy_message.user_address).is_err() {
+        return Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Invalid address length",
+            ))),
+        ));
+    }
 
     // Generating a new deployment structure and storing in db
     let deployment = Deployment::new(&deploy_message);
@@ -181,8 +190,7 @@ pub fn get_contract(
     db: &State<MongoRepo>,
     code_id: String,
     wasm: bool,
-) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>>
-{
+) -> Result<Json<ServerResponse<Contract>>, Custom<Json<ServerResponse<Contract>>>> {
     // Fetching metadata from code_id
     let db_result = db.get_contract_by_hash(&code_id);
 
@@ -203,16 +211,16 @@ pub fn get_contract(
             let mut contract = contract.unwrap();
 
             if !wasm {
-                    contract = Contract {
-                        id: None,
-                        code_id: contract.code_id,
-                        metadata: contract.metadata,
-                        wasm: vec![], // Empty wasm
-                    };
-                }
-
-                return Ok(Json(ServerResponse::new_valid(contract)));
+                contract = Contract {
+                    id: None,
+                    code_id: contract.code_id,
+                    metadata: contract.metadata,
+                    wasm: vec![], // Empty wasm
+                };
             }
+
+            return Ok(Json(ServerResponse::new_valid(contract)));
+        }
         Err(_) => {
             error!(target: "compiler", "There was DB error fetching metadata for {}", &code_id);
             Err(Custom(
@@ -232,5 +240,3 @@ pub fn hash_code(code: &String) -> String {
     let code_id = hasher.finalize();
     format!("{:x}", code_id)
 }
-
-
