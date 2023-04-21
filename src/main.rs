@@ -10,7 +10,7 @@ use dotenv::dotenv;
 extern crate rocket;
 
 use api::contract_api::{
-    fetch_or_compile_contract, get_contract_deployments, get_contract, store_deployment,
+    fetch_or_compile_contract, get_contract, get_contract_deployments, store_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
@@ -21,7 +21,7 @@ use std::{
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
-use log::{debug, info, error};
+use log::{debug, error, info};
 use log4rs;
 
 use utils::cors::CORS;
@@ -88,4 +88,91 @@ fn rocket() -> _ {
             })
         }))
         .attach(CORS)
+}
+// TODO: Check the database is up and running before starting running these tests
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rocket::http::Status;
+    use rocket::local::blocking::Client;
+
+    #[test]
+    fn post_contract_missing_address_error() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client.post(uri!("/contract")).body(r#"{ }"#).dispatch();
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+    }
+
+    #[test]
+    fn post_contract_missing_no_code_error() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client
+            .post(uri!("/contract"))
+            .body(r#"{ "address": "asdf" }"#)
+            .dispatch();
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+    }
+
+    #[test]
+    fn post_contract_missing_no_features_error() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client
+            .post(uri!("/contract"))
+            .body(r#"{ "address": "address", "code": "something" }"#)
+            .dispatch();
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+    }
+
+    #[test]
+    fn post_contract_expected_features_to_be_an_array() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client
+            .post(uri!("/contract"))
+            .body(r#"{ "address": "address", "code": "something", "features": "asdf" }"#)
+            .dispatch();
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+    }
+
+    #[test]
+    fn post_contract_expects_a_valid_len_address() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client
+            .post(uri!("/contract"))
+            .body(r#"{ "address": "address", "code": "something", "features": ["asdf"] }"#)
+            .dispatch();
+        assert_eq!(response.status(), Status::InternalServerError);
+        assert!(response
+            .into_string()
+            .unwrap()
+            .contains("Address is not valid."));
+    }
+
+    #[test]
+    fn post_contract_expects_a_valid_feature() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client
+            .post(uri!("/contract"))
+            .body(r#"{ "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "code": "something", "features": ["asdf"] }"#)
+            .dispatch();
+        assert_eq!(response.status(), Status::InternalServerError);
+        assert!(response
+            .into_string()
+            .unwrap()
+            .contains("Feature not allowed"));
+    }
+
+    #[test]
+    fn post_contract_expects_code_not_to_be_too_long() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let one_mb_string = "a".repeat(1000000);
+        let body = format!(
+            r#"{{ "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "code": "{}", "features": ["psp22"] }}"#,
+            one_mb_string
+        );
+        let response = client.post(uri!("/contract")).body(body).dispatch();
+        assert_eq!(response.status(), Status::InternalServerError);
+        let res_str = response.into_string().unwrap();
+        println!("{}", res_str);
+        assert!(res_str.contains("Code size is too big."));
+    }
 }
