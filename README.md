@@ -1,18 +1,55 @@
 # Ink Compiler Service (Back End)
 
-This project is a Rust-based API for creating and managing smart contracts written in Ink!. It utilizes the Rocket framework and several other Rust crates.
+## Overview
+This project is an API designed to manage ink! smart contract compilations and deployments. The API is built using the Rust programming language and utilizes the Rocket web framework. The API is designed to interact with a MongoDB database, which is used to store smart contract code, as well as information related to deployments.
 
-## Setup
+### 🚀 Run app
 
-1. Clone this repository
+To run the API it is necessary to copy the environment variables file `.env.example` and paste it as `.env`, in this file you will find the environment variables that must be filled in to run the application.
+
+> 🚨🚨🚨 It is necessary to specify the variables int the `.env` to run the application.
+>   - `MONGOURI=<The URI of your MongoDB instance>`
+
+- ⚠️ Requirements:
+  - mongodb database
+
+  A. Install MongoDB locally by following the [instructions on mongodb.com](https://www.mongodb.com/docs/manual/installation/)
+
+  B. Use a MongoDB instance in the cloud, such as [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+
+Either way, you will need to specify the URI of your MongoDB instance in the `.env` file. The URI should be in the following [format](https://www.prisma.io/dataguide/mongodb/connection-uris#a-quick-overview)
+
+
+#### A. With Docker
+
+- ⚠️ Requirements:
+  - docker >= 20
+
+1. Clone this repository and enter the project folder
+```bash
+    git clone https://github.com/GabrielCamba/ink-compiler-be.git
+    cd ink-compiler-be
+```
+2. Make sure your daemon `docker` is running in your system
+3. Build the image with `docker build -t ink-compiler-be-image .`
+4. Run the container with `docker run --env-file .env -it -p 8000:8000 ink-compiler-be-image`
+5. Your application should now be running on the port 8000. You can call this API using the following base URL: `http://localhost:8000`
+
+> ✋ To stop the container, run `docker stop <container_id>`
+
+
+#### B. Local Stack
+
+1. Clone this repository and enter the project folder
+```bash
+    git clone https://github.com/GabrielCamba/ink-compiler-be.git
+    cd ink-compiler-be
+```
 2. Install Rust by following the instructions on [rustup.rs](https://rustup.rs/)
 3. Run `cargo build --release`
 4. Install nightly version `rustup toolchain install nightly`, set it as default `rustup default nightly`, and update with `rustup update`
 5. Install cargo contract following the [instructions](https://github.com/paritytech/cargo-contract)
-6. Install MongoDB by following the [instructions on mongodb.com](https://www.mongodb.com/docs/manual/installation/)
-7. Rename the .env.example file in the root of the project to .env and fill in the following environment variables:
-   - `MONGOURI=<The URI of your MongoDB instance>`
-8. Run the API executing: `./target/release/compiler-be` created in step 3
+6. Run the API executing: `./target/release/compiler-be`
 
 ## Project Structure
 
@@ -191,3 +228,22 @@ Response body example:
     "error": null
 }
 ```
+
+## Contributing
+If you would like to contribute to this project, please feel free to submit a pull request.
+
+## License
+
+Copyright 2023 Protofire
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+<http://www.apache.org/licenses/LICENSE-2.0>
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
