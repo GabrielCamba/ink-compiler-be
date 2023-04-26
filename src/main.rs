@@ -33,9 +33,9 @@ fn rocket() -> _ {
     let logger = log4rs::init_file("logging_config.yaml", Default::default());
     if logger.is_err() {
         error!("Error initializing logger");
-        std::process::exit(1);
+    } else {
+        info!(target: "compiler", "Logger Initialized");
     }
-    info!(target: "compiler", "Logger Initialized");
 
     // Loading env variables
     dotenv().ok();
@@ -95,6 +95,8 @@ mod test {
     use super::*;
     use rocket::http::Status;
     use rocket::local::blocking::Client;
+
+    const VALID_INK_SC :&str= r#"#![cfg_attr(not(feature = \"std\"), no_std)] #![feature(min_specialization)] #[openbrush::contract] pub mod my_psp22 { use openbrush::contracts::psp22::*; use openbrush::traits::Storage; #[ink(storage)] #[derive(Default, Storage)] pub struct Contract { #[storage_field] psp22: psp22::Data, } impl PSP22 for Contract {} impl Contract { #[ink(constructor)] pub fn new(initial_supply: Balance) -> Self { let mut _instance = Self::default(); _instance._mint_to(_instance.env().caller(), initial_supply); _instance } } }"#;
 
     #[test]
     fn post_contract_missing_address_error() {
@@ -172,7 +174,18 @@ mod test {
         let response = client.post(uri!("/contract")).body(body).dispatch();
         assert_eq!(response.status(), Status::InternalServerError);
         let res_str = response.into_string().unwrap();
-        println!("{}", res_str);
-        assert!(res_str.contains("Code size is too big."));
+        assert!(res_str.contains("Code size too big."));
     }
+
+    #[test]
+    fn post_contract_expects_code_is_ok() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let body = format!(
+            r#"{{ "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "code": "{}", "features": ["psp22"] }}"#,
+            VALID_INK_SC
+        );
+        let response = client.post(uri!("/contract")).body(body).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+    }
+
 }
