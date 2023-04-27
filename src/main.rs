@@ -91,9 +91,9 @@ fn rocket() -> _ {
 }
 // TODO: Check the database is up and running before starting running these tests
 #[cfg(test)]
-#[path = "./tests/main_contract_tests.rs"]
-mod main_contract_tests;
+#[path = "./tests/main_post_contract_tests.rs"]
+mod main_post_contract_tests;
 
 #[cfg(test)]
-#[path = "./tests/main_deployments_tests.rs"]
-mod main_deployments_test; 
+#[path = "./tests/main_post_deployments_tests.rs"]
+mod main_post_deployments_test; 

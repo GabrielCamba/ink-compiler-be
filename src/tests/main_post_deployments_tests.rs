@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod main_deployments_test {
+mod main_post_deployments_test {
     use super::super::*;
     use rocket::http::Status;
     use rocket::local::blocking::Client;
