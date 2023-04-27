@@ -93,3 +93,7 @@ fn rocket() -> _ {
 #[cfg(test)]
 #[path = "./tests/main_contract_tests.rs"]
 mod main_contract_tests;
+
+#[cfg(test)]
+#[path = "./tests/main_deployments_tests.rs"]
+mod main_deployments_test; 
