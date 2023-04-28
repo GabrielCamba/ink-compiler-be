@@ -59,13 +59,22 @@ mod main_post_deployments_test {
             .contains("Invalid address length"));
     }
 
-    // TODO CONTRACT ADDRESS LEN and test it
-    // TODO Descriptive strings
-    // TODO Check Empty data is ok
+    #[test]
+    fn post_deployments_contract_address_error() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" }"#).dispatch();
+        assert_eq!(response.status(), Status::InternalServerError);
+        assert!(response
+            .into_string()
+            .unwrap()
+            .contains("Invalid address length"));
+    }
+
     #[test]
     fn post_deployments_empty_data_is_ok() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" }"#).dispatch();
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" }"#).dispatch();
+        // status ok means that the deployment was stored in the database
         assert_eq!(response.status(), Status::Ok);
         println!("{:?}", response.into_string());
     }
