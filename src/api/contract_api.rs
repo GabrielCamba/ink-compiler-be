@@ -118,7 +118,8 @@ pub fn store_deployment(
     deploy_message: Json<DeployMessage>,
 ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
     // Check the address is valid
-    if check_address_len(&deploy_message.user_address).is_err() {
+    if check_address_len(&deploy_message.user_address).is_err() || 
+    check_address_len(&deploy_message.contract_address).is_err(){
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(

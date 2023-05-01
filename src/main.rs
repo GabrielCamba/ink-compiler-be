@@ -10,7 +10,7 @@ use dotenv::dotenv;
 extern crate rocket;
 
 use api::contract_api::{
-    fetch_or_compile_contract, get_contract_deployments, get_contract, store_deployment,
+    fetch_or_compile_contract, get_contract, get_contract_deployments, store_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
@@ -21,7 +21,7 @@ use std::{
 use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
-use log::{debug, info, error};
+use log::{debug, error, info};
 use log4rs;
 
 use utils::cors::CORS;
@@ -33,9 +33,9 @@ fn rocket() -> _ {
     let logger = log4rs::init_file("logging_config.yaml", Default::default());
     if logger.is_err() {
         error!("Error initializing logger");
-        std::process::exit(1);
+    } else {
+        info!(target: "compiler", "Logger Initialized");
     }
-    info!(target: "compiler", "Logger Initialized");
 
     // Loading env variables
     dotenv().ok();
@@ -89,3 +89,18 @@ fn rocket() -> _ {
         }))
         .attach(CORS)
 }
+#[cfg(test)]
+#[path = "./tests/main_post_contract_tests.rs"]
+mod main_post_contract_test;
+
+#[cfg(test)]
+#[path = "./tests/main_get_contract_tests.rs"]
+mod main_get_contract_test;
+
+#[cfg(test)]
+#[path = "./tests/main_post_deployments_tests.rs"]
+mod main_post_deployments_test; 
+
+#[cfg(test)]
+#[path = "./tests/main_get_deployments_tests.rs"]
+mod main_get_deployments_test; 
