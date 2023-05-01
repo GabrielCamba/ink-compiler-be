@@ -44,9 +44,8 @@ mod main_get_contract_test {
             .contains("Contract not found."));
     }
     
-    //renameIt
     #[test]
-    fn get_contract_happy_path() {
+    fn get_contract_working_as_expected() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let body = format!(
             r#"{{ "address": "4GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "code": "{}", "features": ["psp22"] }}"#,
