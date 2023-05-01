@@ -5,10 +5,23 @@ This project is an API designed to manage ink! smart contract compilations and d
 
 ### 🚀 Run app
 
-To run the API it is necessary to copy the environment variables file `.env.example` and paste it as `.env`, in this file you will find the environment variables that must be filled in to run the application.
+#### A. With Docker
 
-> 🚨🚨🚨 It is necessary to specify the variables int the `.env` to run the application.
->   - `MONGOURI=<The URI of your MongoDB instance>`
+- ⚠️ Requirements:
+  - docker >= 20
+  - docker-compose >= 2.15
+
+1. Clone this repository and enter the project folder
+```bash
+    git clone https://github.com/GabrielCamba/ink-compiler-be.git && cd ink-compiler-be
+```
+2. Make sure your daemon `docker` is running in your system
+3. Run the command `docker-compose up`
+4. Your application should now be running on the port 8000. You can call this API using the following base URL: `http://localhost:8000`
+
+> ✋ To stop the application, run the command `docker-compose down` or press `Ctrl + C` in the terminal where the application is running.
+
+#### B. Local Stack
 
 - ⚠️ Requirements:
   - mongodb database
@@ -19,31 +32,12 @@ To run the API it is necessary to copy the environment variables file `.env.exam
 
 Either way, you will need to specify the URI of your MongoDB instance in the `.env` file. The URI should be in the following [format](https://www.prisma.io/dataguide/mongodb/connection-uris#a-quick-overview)
 
-
-#### A. With Docker
-
-- ⚠️ Requirements:
-  - docker >= 20
+> 🚨🚨🚨 It is necessary to specify the variables int the `.env` to run the application.
+>   - `MONGOURI=<The URI of your MongoDB instance>`
 
 1. Clone this repository and enter the project folder
 ```bash
-    git clone https://github.com/GabrielCamba/ink-compiler-be.git
-    cd ink-compiler-be
-```
-2. Make sure your daemon `docker` is running in your system
-3. Build the image with `docker build -t ink-compiler-be-image .`
-4. Run the container with `docker run --env-file .env -it -p 8000:8000 ink-compiler-be-image`
-5. Your application should now be running on the port 8000. You can call this API using the following base URL: `http://localhost:8000`
-
-> ✋ To stop the container, run `docker stop <container_id>`
-
-
-#### B. Local Stack
-
-1. Clone this repository and enter the project folder
-```bash
-    git clone https://github.com/GabrielCamba/ink-compiler-be.git
-    cd ink-compiler-be
+    git clone https://github.com/GabrielCamba/ink-compiler-be.git && cd ink-compiler-be
 ```
 2. Install Rust by following the instructions on [rustup.rs](https://rustup.rs/)
 3. Run `cargo build --release`
