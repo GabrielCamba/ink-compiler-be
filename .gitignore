@@ -4,3 +4,6 @@
 /log
 /log/*
 /compilation_target/lib.rs
+/compilation_target/target
+/compilation_target/__openbrush_metadata_folder
+

@@ -89,7 +89,6 @@ fn rocket() -> _ {
         }))
         .attach(CORS)
 }
-// TODO: Check the database is up and running before starting running these tests
 #[cfg(test)]
 #[path = "./tests/main_post_contract_tests.rs"]
 mod main_post_contract_test;
