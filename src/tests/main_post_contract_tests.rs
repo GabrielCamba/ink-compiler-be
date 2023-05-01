@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod main_contract_test {
+mod main_post_contract_test {
     use super::super::*;
     use rocket::http::Status;
     use rocket::local::blocking::Client;
