@@ -1,0 +1,34 @@
+version: '3.8'
+
+networks:
+  ink-compiler-be:
+    name: ink-compiler-be 
+
+services:
+  compiler-be:
+    container_name: pcw_backend
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      - MONGOURI=mongodb://mongodb:27017
+    networks:
+      - ink-compiler-be
+    depends_on:
+      - mongodb
+  mongodb:
+    ports:
+      - 27027:27017
+    container_name: pcw_mongodb
+    restart: always
+    logging:
+        options:
+            max-size: 1g
+    image: mongo:5.0.16
+    networks:
+      - ink-compiler-be
+  
+
+  
