@@ -223,6 +223,14 @@ Response body example:
 }
 ```
 
+## Testing
+
+To run the tests, run the following command
+
+```bash
+  docker-compose run compiler-be-test 
+```
+
 ## Contributing
 If you would like to contribute to this project, please feel free to submit a pull request.
 
