@@ -29,6 +29,18 @@ services:
     image: mongo:5.0.16
     networks:
       - ink-compiler-be
+  compiler-be-test:
+    container_name: pcw_backend_test
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    entrypoint: ["cargo", "test"]
+    environment:
+      - MONGOURI=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    networks:
+      - ink-compiler-be
   
 
   
