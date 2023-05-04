@@ -16,7 +16,7 @@ This project is an API designed to manage ink! smart contract compilations and d
     git clone https://github.com/GabrielCamba/ink-compiler-be.git && cd ink-compiler-be
 ```
 2. Make sure your daemon `docker` is running in your system
-3. Run the command `docker-compose up`
+3. Run the command `docker-compose up compiler-be`
 4. Your application should now be running on the port 8000. You can call this API using the following base URL: `http://localhost:8000`
 
 > ✋ To stop the application, run the command `docker-compose down` or press `Ctrl + C` in the terminal where the application is running.
