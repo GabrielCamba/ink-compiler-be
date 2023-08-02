@@ -1,5 +1,5 @@
 # Use a Rust Docker image as the base image
-FROM rust:1.67
+FROM rust:1.69
 
 # Clone the repository
 COPY . ./ink-compiler-be
@@ -9,11 +9,10 @@ WORKDIR /ink-compiler-be
 
 # Install Rust and compile the project
 RUN cargo build --release \
-    && rustup toolchain install nightly \
-    && rustup default nightly \
-    && rustup update \
+    && rustup toolchain install nightly-2023-02-07 \
+    && rustup default nightly-2023-02-07 \
     && rustup component add rust-src \
-    && cargo install --force --locked cargo-contract
+    && cargo install --force --version 2.2.1 cargo-contract
 
 # Expose port 8000
 EXPOSE 8000
