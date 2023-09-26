@@ -10,8 +10,8 @@ use mongodb::{
 
 use log::{debug, error};
 pub struct MongoRepo {
-    contracts: Collection<Contract>,
-    deployments: Collection<Deployment>,
+    pub contracts: Collection<Contract>,
+    pub deployments: Collection<Deployment>,
 }
 
 // Mongo Repo implementation
@@ -60,27 +60,30 @@ impl MongoRepo {
     }
 
     // Insert a new contract into the database
-    pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
-        let contract = self
-            .contracts
-            .insert_one(new_contract, None)?;        
+    pub fn create_contract(
+        &self,
+        new_contract: &Contract,
+    ) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
+        let contract = self.contracts.insert_one(new_contract, None)?;
         Ok(contract)
     }
 
     // Get an existing contract from the DB
-    pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>,  Box<dyn std::error::Error>> {
+    pub fn get_contract_by_hash(
+        &self,
+        hash: &String,
+    ) -> Result<Option<Contract>, Box<dyn std::error::Error>> {
         let filter = doc! {"code_id": hash};
-        let contract = self
-            .contracts
-            .find_one(filter, None)?;
+        let contract = self.contracts.find_one(filter, None)?;
         Ok(contract)
     }
 
     // Create a deployment in the database
-    pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
-        let deployment = self
-            .deployments
-            .insert_one(new_deployment, None)?;
+    pub fn create_deployment(
+        &self,
+        new_deployment: &Deployment,
+    ) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
+        let deployment = self.deployments.insert_one(new_deployment, None)?;
         Ok(deployment)
     }
 
@@ -100,9 +103,7 @@ impl MongoRepo {
             }
         }
 
-        let deployments = self
-            .deployments
-            .find(filter, None)?;
+        let deployments = self.deployments.find(filter, None)?;
 
         let deployments_vec: Vec<Deployment> = deployments
             .filter(|deployment| deployment.is_ok())
