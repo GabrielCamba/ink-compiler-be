@@ -20,7 +20,7 @@ impl MongoRepo {
     pub fn init() -> Self {
         // Generating dabase connection
         let uri = match env::var("MONGOURI") {
-            Ok(v) => v.to_string(),
+            Ok(v) => v,
             Err(_) => {
                 error!(target: "compiler", "MONGOURI environment variable not set");
                 std::process::exit(1);
@@ -92,14 +92,17 @@ impl MongoRepo {
         &self,
         deployment_message: &GetDeploymentsMessage,
     ) -> Result<Vec<Deployment>, Box<dyn std::error::Error>> {
-        let filter;
+        let mut filter = doc! {"user_address": &deployment_message.user_address};
 
-        match &deployment_message.network {
-            Some(network) if (network != "") => {
-                filter = doc! {"user_address": &deployment_message.user_address, "network": &deployment_message.network};
+        if let Some(network) = &deployment_message.network {
+            if !network.is_empty() {
+                filter.insert("network", network);
             }
-            _ => {
-                filter = doc! {"user_address": &deployment_message.user_address};
+        }
+
+        if let Some(contract_address) = &deployment_message.contract_address {
+            if !contract_address.is_empty() {
+                filter.insert("contract_address", contract_address);
             }
         }
 

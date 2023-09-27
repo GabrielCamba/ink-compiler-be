@@ -118,8 +118,9 @@ pub fn store_deployment(
     deploy_message: Json<DeployMessage>,
 ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
     // Check the address is valid
-    if check_address_len(&deploy_message.user_address).is_err() || 
-    check_address_len(&deploy_message.contract_address).is_err(){
+    if check_address_len(&deploy_message.user_address).is_err()
+        || check_address_len(&deploy_message.contract_address).is_err()
+    {
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -154,16 +155,18 @@ pub fn store_deployment(
 }
 
 // /deployments endpoint for fetching a deployment
-#[get("/deployments?<user_address>&<network>")]
+#[get("/deployments?<user_address>&<network>&<contract_address>")]
 pub fn get_contract_deployments(
     db: &State<MongoRepo>,
     user_address: String,
     network: Option<String>,
+    contract_address: Option<String>,
 ) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
     // Creating structure and fetching the deployments from db
     let get_deployments = GetDeploymentsMessage {
         user_address: user_address.clone(),
         network,
+        contract_address,
     };
     let deployments = db.get_deployments(&get_deployments);
 

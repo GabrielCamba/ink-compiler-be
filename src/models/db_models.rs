@@ -23,6 +23,10 @@ pub struct Deployment {
     pub network: String,
     pub code_id: String,
     pub user_address: String,
+    pub tx_hash: Option<String>,
+    pub date: String,
+    pub contract_type: String,
+    pub external_abi: Option<String>,
 }
 
 impl Deployment {
@@ -34,6 +38,10 @@ impl Deployment {
             network: deploy_message.network.clone(),
             code_id: deploy_message.code_id.clone(),
             user_address: deploy_message.user_address.clone(),
+            tx_hash: deploy_message.tx_hash.clone(),
+            date: deploy_message.date.clone(),
+            contract_type: deploy_message.contract_type.clone(),
+            external_abi: deploy_message.external_abi.clone(),
         }
     }
 }

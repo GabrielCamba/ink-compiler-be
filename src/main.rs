@@ -99,8 +99,8 @@ mod main_get_contract_test;
 
 #[cfg(test)]
 #[path = "./tests/main_post_deployments_tests.rs"]
-mod main_post_deployments_test; 
+mod main_post_deployments_test;
 
 #[cfg(test)]
 #[path = "./tests/main_get_deployments_tests.rs"]
-mod main_get_deployments_test; 
+mod main_get_deployments_test;

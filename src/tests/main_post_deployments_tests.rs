@@ -59,7 +59,7 @@ mod post_deployments_test {
     #[test]
     fn post_deployments_invalid_address_error() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "some_user_address" }"#).dispatch();
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "some_user_address", "date":"2021-03-03T15:00:00.000Z", "contract_type":"custom" }"#).dispatch();
         assert_eq!(response.status(), Status::InternalServerError);
         assert!(response
             .into_string()
@@ -71,7 +71,7 @@ mod post_deployments_test {
     #[test]
     fn post_deployments_contract_address_error() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" }"#).dispatch();
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "some_address", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "date":"2021-03-03T15:00:00.000Z", "contract_type": "psp22" }"#).dispatch();
         assert_eq!(response.status(), Status::InternalServerError);
         assert!(response
             .into_string()
@@ -84,7 +84,7 @@ mod post_deployments_test {
     fn post_deployments_empty_data_is_ok() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let db = client.rocket().state::<MongoRepo>().unwrap();
-        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" }"#).dispatch();
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "date":"2021-03-03T15:00:00.000Z", "contract_type":"custom" }"#).dispatch();
         // status ok means that the deployment was stored in the database
         assert_eq!(response.status(), Status::Ok);
 

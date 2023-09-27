@@ -12,7 +12,7 @@ RUN cargo build --release \
     && rustup toolchain install nightly-2023-02-07 \
     && rustup default nightly-2023-02-07 \
     && rustup component add rust-src \
-    && cargo install --force --version 2.2.1 cargo-contract
+    && cargo install --force --locked --version 2.2.1 cargo-contract
 
 # Expose port 8000
 EXPOSE 8000
