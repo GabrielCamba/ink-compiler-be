@@ -89,11 +89,35 @@ mod post_deployments_test {
         assert_eq!(response.status(), Status::Ok);
 
         let db_res = db.deployments.delete_one(
-            doc! {"contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
+            doc! {"contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","network": "some_network", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
             None,
         );
         assert!(db_res.is_ok());
         std::mem::drop(response);
+        client.terminate();
+    }
+
+    #[test]
+    fn patch_deployments_update_is_ok() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let db = client.rocket().state::<MongoRepo>().unwrap();
+
+        let response = client.post(uri!("/deployments")).body(r#"{ "contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "network": "some_network", "code_id": "some_id", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "date":"2021-03-03T15:00:00.000Z", "contract_type":"custom" }"#).dispatch();
+        // status ok means that the deployment was stored in the database
+        assert_eq!(response.status(), Status::Ok);
+        std::mem::drop(response);
+
+        let response = client.patch(uri!("/deployments")).body(r#"{ "contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "network": "some_network",  "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",  "contract_name":"name", "hidden": true}"#).dispatch();
+        // status ok means that the deployment was updated in the database
+        assert_eq!(response.status(), Status::Ok);
+        std::mem::drop(response);
+
+        // Cleanup
+        let db_res = db.deployments.delete_one(
+            doc! {"contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","network": "some_network", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
+            None,
+        );
+        assert!(db_res.is_ok());
         client.terminate();
     }
 }

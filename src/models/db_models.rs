@@ -27,6 +27,7 @@ pub struct Deployment {
     pub date: String,
     pub contract_type: String,
     pub external_abi: Option<String>,
+    pub hidden: bool,
 }
 
 impl Deployment {
@@ -42,6 +43,7 @@ impl Deployment {
             date: deploy_message.date.clone(),
             contract_type: deploy_message.contract_type.clone(),
             external_abi: deploy_message.external_abi.clone(),
+            hidden: false,
         }
     }
 }

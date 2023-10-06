@@ -1,7 +1,8 @@
 use std::env;
 
-use crate::models::api_models::GetDeploymentsMessage;
+use crate::models::api_models::{GetDeploymentsMessage, UpdateDeployMessage};
 use crate::models::db_models::{Contract, Deployment};
+use mongodb::results::UpdateResult;
 use mongodb::{
     bson::doc,
     results::InsertOneResult,
@@ -84,6 +85,17 @@ impl MongoRepo {
         new_deployment: &Deployment,
     ) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
         let deployment = self.deployments.insert_one(new_deployment, None)?;
+        Ok(deployment)
+    }
+
+    // Update a deployment in the database
+    pub fn update_deployment(
+        &self,
+        update_deployment: &UpdateDeployMessage,
+    ) -> Result<UpdateResult, Box<dyn std::error::Error>> {
+        let filter = doc! {"contract_address": &update_deployment.contract_address, "network": &update_deployment.network, "user_address": &update_deployment.user_address};
+        let deployment = self
+            .deployments.update_one(filter, doc! {"$set": {"contract_name": &update_deployment.contract_name, "hidden": &update_deployment.hidden}}, None)?;
         Ok(deployment)
     }
 

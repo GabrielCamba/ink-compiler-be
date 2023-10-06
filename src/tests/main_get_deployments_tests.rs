@@ -91,12 +91,12 @@ mod get_deployments_test {
         assert!(response
             .into_string()
             .unwrap()
-            .contains("{\"contract_name\":null,\"contract_address\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutnn\",\"network\":\"some_network\",\"code_id\":\"some_impossible_id\",\"user_address\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\",\"tx_hash\":null,\"date\":\"2021-03-03T15:00:00.000Z\",\"contract_type\":\"custom\",\"external_abi\":null}"));
+            .contains("{\"contract_name\":null,\"contract_address\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutnn\",\"network\":\"some_network\",\"code_id\":\"some_impossible_id\",\"user_address\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\",\"tx_hash\":null,\"date\":\"2021-03-03T15:00:00.000Z\",\"contract_type\":\"custom\",\"external_abi\":null,\"hidden\":false}"));
         let db_res = db.deployments.delete_one(
-            doc! {"contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutnn","user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
+            doc! {"contract_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutnn","network": "some_network", "user_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
             None,
         );
         assert!(db_res.is_ok());
-        //client.terminate();
+        client.terminate();
     }
 }
