@@ -166,6 +166,10 @@ Accepts a JSON payload representing a smart contract deployment and stores it in
 | `network`      | `string` | **Required**. The network where the smart contract was deployed. |
 | `code_id`      | `string` | **Required**. The unique identifier of the smart contract. |
 | `user_address`      | `string` | **Required**. The wallet address of the smart contract deployer. |
+| `tx_hash`      | `string` | **Optional**. The transaction hash of the deployment transaction. |
+| `date`      | `string` | **Required**. The date of the deployment or upload. |
+| `contract_type`      | `string` | **Required**. The type of smart contract. |
+| `external_abi`      | `string` | **Optional**. The external ABI of the smart contract. |
 
 Request body example:
 
@@ -175,7 +179,10 @@ Request body example:
     "contract_address": "5Dsykc2KUHcziwcTgZkHxyDDTotBJbGNh3BakfZ5PdDGMzfn",
     "network": "Rococo",
     "code_id": "5a4ce58af5294a73b22b5c6bf1b1a8886972598925ddee77c3a591ced4bae78b",
-    "user_address": "ZA9WeQNb3QKmqvNi1szndDMchQ66npnDFXpjWuKayXQpriW"
+    "user_address": "ZA9WeQNb3QKmqvNi1szndDMchQ66npnDFXpjWuKayXQpriW",
+    "tx_hash": "0x481c66073400c0d24a4105fa7a82d47957485235ef10aaf1ef0635bece103e2a",
+    "date": "2021-09-30T15:00:00Z",
+    "contract_type": "psp22"
 }
 ```
 
@@ -189,16 +196,18 @@ Response body example:
 ```
 
 #### Get all contract deployments for a given user
-Returns all the smart contract deployments for a given user, optionally filtered by network.
+Returns all the smart contract deployments for a given user, optionally filtered by network and contract address.
 
 ```http
-  GET /deployments?{user_address}&{network}
+  GET /deployments?{user_address}&{network}&{contract_address}
 ```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `user_address`      | `string` | **Required**. The wallet address of the deployer. |
 | `network`      | `string` | **Optional**. The network where the smart contracts were deployed. |
+| `contract_address`      | `string` | **Optional**. The address of the deployed smart contract. |
+
 
 Request example:
 

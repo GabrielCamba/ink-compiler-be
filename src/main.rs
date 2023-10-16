@@ -11,6 +11,7 @@ extern crate rocket;
 
 use api::contract_api::{
     fetch_or_compile_contract, get_contract, get_contract_deployments, store_deployment,
+    update_deployment,
 };
 use repository::mongodb_repo::MongoRepo;
 use rocket::fairing::AdHoc;
@@ -22,7 +23,6 @@ use utils::compilation_queue::CompilationQueue;
 use utils::compiler::Compiler;
 
 use log::{debug, error, info};
-use log4rs;
 
 use utils::cors::CORS;
 
@@ -70,6 +70,7 @@ fn rocket() -> _ {
             routes![
                 fetch_or_compile_contract,
                 store_deployment,
+                update_deployment,
                 get_contract_deployments,
                 get_contract
             ],
@@ -99,8 +100,8 @@ mod main_get_contract_test;
 
 #[cfg(test)]
 #[path = "./tests/main_post_deployments_tests.rs"]
-mod main_post_deployments_test; 
+mod main_post_deployments_test;
 
 #[cfg(test)]
 #[path = "./tests/main_get_deployments_tests.rs"]
-mod main_get_deployments_test; 
+mod main_get_deployments_test;

@@ -41,10 +41,24 @@ pub struct DeployMessage {
     pub network: String,
     pub code_id: String,
     pub user_address: String,
+    pub tx_hash: Option<String>,
+    pub date: String,
+    pub contract_type: String,
+    pub external_abi: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateDeployMessage {
+    pub contract_address: String,
+    pub network: String,
+    pub user_address: String,
+    pub contract_name: Option<String>,
+    pub hidden: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetDeploymentsMessage {
     pub user_address: String,
     pub network: Option<String>,
+    pub contract_address: Option<String>,
 }

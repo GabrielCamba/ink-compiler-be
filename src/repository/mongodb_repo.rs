@@ -1,7 +1,8 @@
 use std::env;
 
-use crate::models::api_models::GetDeploymentsMessage;
+use crate::models::api_models::{GetDeploymentsMessage, UpdateDeployMessage};
 use crate::models::db_models::{Contract, Deployment};
+use mongodb::results::UpdateResult;
 use mongodb::{
     bson::doc,
     results::InsertOneResult,
@@ -10,8 +11,8 @@ use mongodb::{
 
 use log::{debug, error};
 pub struct MongoRepo {
-    contracts: Collection<Contract>,
-    deployments: Collection<Deployment>,
+    pub contracts: Collection<Contract>,
+    pub deployments: Collection<Deployment>,
 }
 
 // Mongo Repo implementation
@@ -20,7 +21,7 @@ impl MongoRepo {
     pub fn init() -> Self {
         // Generating dabase connection
         let uri = match env::var("MONGOURI") {
-            Ok(v) => v.to_string(),
+            Ok(v) => v,
             Err(_) => {
                 error!(target: "compiler", "MONGOURI environment variable not set");
                 std::process::exit(1);
@@ -60,27 +61,41 @@ impl MongoRepo {
     }
 
     // Insert a new contract into the database
-    pub fn create_contract(&self, new_contract: &Contract) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
-        let contract = self
-            .contracts
-            .insert_one(new_contract, None)?;        
+    pub fn create_contract(
+        &self,
+        new_contract: &Contract,
+    ) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
+        let contract = self.contracts.insert_one(new_contract, None)?;
         Ok(contract)
     }
 
     // Get an existing contract from the DB
-    pub fn get_contract_by_hash(&self, hash: &String) -> Result<Option<Contract>,  Box<dyn std::error::Error>> {
+    pub fn get_contract_by_hash(
+        &self,
+        hash: &String,
+    ) -> Result<Option<Contract>, Box<dyn std::error::Error>> {
         let filter = doc! {"code_id": hash};
-        let contract = self
-            .contracts
-            .find_one(filter, None)?;
+        let contract = self.contracts.find_one(filter, None)?;
         Ok(contract)
     }
 
     // Create a deployment in the database
-    pub fn create_deployment(&self, new_deployment: &Deployment) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
+    pub fn create_deployment(
+        &self,
+        new_deployment: &Deployment,
+    ) -> Result<InsertOneResult, Box<dyn std::error::Error>> {
+        let deployment = self.deployments.insert_one(new_deployment, None)?;
+        Ok(deployment)
+    }
+
+    // Update a deployment in the database
+    pub fn update_deployment(
+        &self,
+        update_deployment: &UpdateDeployMessage,
+    ) -> Result<UpdateResult, Box<dyn std::error::Error>> {
+        let filter = doc! {"contract_address": &update_deployment.contract_address, "network": &update_deployment.network, "user_address": &update_deployment.user_address};
         let deployment = self
-            .deployments
-            .insert_one(new_deployment, None)?;
+            .deployments.update_one(filter, doc! {"$set": {"contract_name": &update_deployment.contract_name, "hidden": &update_deployment.hidden}}, None)?;
         Ok(deployment)
     }
 
@@ -89,20 +104,21 @@ impl MongoRepo {
         &self,
         deployment_message: &GetDeploymentsMessage,
     ) -> Result<Vec<Deployment>, Box<dyn std::error::Error>> {
-        let filter;
+        let mut filter = doc! {"user_address": &deployment_message.user_address};
 
-        match &deployment_message.network {
-            Some(network) if (network != "") => {
-                filter = doc! {"user_address": &deployment_message.user_address, "network": &deployment_message.network};
-            }
-            _ => {
-                filter = doc! {"user_address": &deployment_message.user_address};
+        if let Some(network) = &deployment_message.network {
+            if !network.is_empty() {
+                filter.insert("network", network);
             }
         }
 
-        let deployments = self
-            .deployments
-            .find(filter, None)?;
+        if let Some(contract_address) = &deployment_message.contract_address {
+            if !contract_address.is_empty() {
+                filter.insert("contract_address", contract_address);
+            }
+        }
+
+        let deployments = self.deployments.find(filter, None)?;
 
         let deployments_vec: Vec<Deployment> = deployments
             .filter(|deployment| deployment.is_ok())

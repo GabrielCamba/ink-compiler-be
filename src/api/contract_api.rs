@@ -5,7 +5,10 @@ use crate::utils::compilation_queue::CompilationRequest;
 use crate::utils::sanity_check::check_address_len;
 use crate::{
     models::{
-        api_models::{DeployMessage, GetDeploymentsMessage, ServerResponse, WizardMessage},
+        api_models::{
+            DeployMessage, GetDeploymentsMessage, ServerResponse, UpdateDeployMessage,
+            WizardMessage,
+        },
         db_models::{Contract, Deployment},
     },
     repository::mongodb_repo::MongoRepo,
@@ -118,8 +121,9 @@ pub fn store_deployment(
     deploy_message: Json<DeployMessage>,
 ) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
     // Check the address is valid
-    if check_address_len(&deploy_message.user_address).is_err() || 
-    check_address_len(&deploy_message.contract_address).is_err(){
+    if check_address_len(&deploy_message.user_address).is_err()
+        || check_address_len(&deploy_message.contract_address).is_err()
+    {
         return Err(Custom(
             Status::InternalServerError,
             Json(ServerResponse::new_error(String::from(
@@ -153,17 +157,59 @@ pub fn store_deployment(
     }
 }
 
+#[patch("/deployments", data = "<update_deploy_message>")]
+pub fn update_deployment(
+    db: &State<MongoRepo>,
+    update_deploy_message: Json<UpdateDeployMessage>,
+) -> Result<Json<ServerResponse<String>>, Custom<Json<ServerResponse<String>>>> {
+    // Check the address is valid
+    if check_address_len(&update_deploy_message.user_address).is_err()
+        || check_address_len(&update_deploy_message.contract_address).is_err()
+    {
+        return Err(Custom(
+            Status::InternalServerError,
+            Json(ServerResponse::new_error(String::from(
+                "Invalid address length",
+            ))),
+        ));
+    }
+
+    // Updating the deployment in db
+    let deployment_update_result = db.update_deployment(&update_deploy_message);
+    info!(target: "compiler", "Updating deployment {} for user {} in network {}", &update_deploy_message.contract_address, &update_deploy_message.user_address, &update_deploy_message.network);
+
+    // Evaluate the result of the update operation
+    match deployment_update_result {
+        Ok(_) => {
+            info!(target: "compiler", "Deployment {} updated in the database", &update_deploy_message.contract_address);
+            Ok(Json(ServerResponse::new_valid(String::from("ok"))))
+        }
+
+        Err(_) => {
+            error!(target: "compiler", "There was an error updating the deployment {}", &update_deploy_message.contract_address);
+            Err(Custom(
+                Status::InternalServerError,
+                Json(ServerResponse::new_error(String::from(
+                    "Error updating deployment.",
+                ))),
+            ))
+        }
+    }
+}
+
 // /deployments endpoint for fetching a deployment
-#[get("/deployments?<user_address>&<network>")]
+#[get("/deployments?<user_address>&<network>&<contract_address>")]
 pub fn get_contract_deployments(
     db: &State<MongoRepo>,
     user_address: String,
     network: Option<String>,
+    contract_address: Option<String>,
 ) -> Result<Json<ServerResponse<Vec<Deployment>>>, Custom<Json<ServerResponse<Vec<Deployment>>>>> {
     // Creating structure and fetching the deployments from db
     let get_deployments = GetDeploymentsMessage {
         user_address: user_address.clone(),
         network,
+        contract_address,
     };
     let deployments = db.get_deployments(&get_deployments);
 
